@@ -1,10 +1,8 @@
-const { validationResult } = require("express-validator");
-const argon2 = require("argon2");
-const jwt = require("jsonwebtoken");
-const config = require("config");
-
-const User = require("../models/User");
-
+import { validationResult } from "express-validator";
+import argon2 from "argon2";
+import jwt from "jsonwebtoken";
+import config from "config";
+import User from "../models/User.js";
 
 // Routes
 
@@ -15,7 +13,7 @@ const User = require("../models/User");
  * @param {*} req 
  * @param {*} res 
  */
-module.exports.register = async (req, res) => {
+export const register = async (req, res) => {
     // First, validate body content or return an error
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -81,7 +79,7 @@ module.exports.register = async (req, res) => {
  * @param {*} req 
  * @param {*} res 
  */
-module.exports.authentication = async (req, res) => {
+export const authentication = async (req, res) => {
     // First, validate body content or return an error
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

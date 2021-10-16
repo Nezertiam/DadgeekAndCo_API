@@ -1,5 +1,7 @@
-const express = require("express");
-const connectDB = require("./config/db");
+import express from "express";
+import connectDB from "./config/db.js";
+import securityRoutes from "./routes/security.routes.js"
+import profileRoutes from "./routes/profile.routes.js";
 
 const app = express();
 
@@ -11,8 +13,8 @@ app.use(express.json({ extended: false }));
 app.get("/", (req, res) => res.json({ message: "API Running" }))
 
 // Define routes
-app.use("/api/security", require("./routes/security.routes.js"));
-app.use("/api/profile", require("./routes/profile.routes.js"));
+app.use("/api/security", securityRoutes);
+app.use("/api/profile", profileRoutes);
 
 
 const PORT = process.env.PORT || 5000;

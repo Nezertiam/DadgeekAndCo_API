@@ -1,6 +1,6 @@
-const Profile = require("../models/Profile")
+import Profile from "../models/Profile.js";
 
-module.exports.getMyProfile = async (req, res) => {
+export const getMyProfile = async (req, res) => {
     try {
         const profile = await Profile.findOne({ user: req.user.id }).populate("user", ["name"]);
         if (!profile) {

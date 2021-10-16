@@ -1,6 +1,8 @@
-const router = require("express").Router();
-const SecurityController = require("../controllers/security.controller.js");
-const { check } = require("express-validator");
+import express from "express";
+import { register, authentication } from "../controllers/security.controller.js";
+import { check } from "express-validator";
+
+const router = express.Router();
 
 // @route   POST api/security
 // @desc    Register user
@@ -9,7 +11,7 @@ router.post("/register", [
     check("name", "Name is required.").not().isEmpty(),
     check("email", "Please include a valid email.").isEmail(),
     check("password", "Please enter a password with 8 or more characters.").isLength({ min: 8 })
-], SecurityController.register);
+], register);
 
 // @route   POST api/security
 // @desc    Authenticate user & get token
@@ -17,7 +19,7 @@ router.post("/register", [
 router.post("/auth", [
     check("email", "Please include a valid email").isEmail(),
     check("password", "Password is required").exists()
-], SecurityController.authentication);
+], authentication);
 
 
-module.exports = router;
+export default router;

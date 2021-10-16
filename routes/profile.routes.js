@@ -1,10 +1,12 @@
-const router = require("express").Router();
-const ProfileController = require("../controllers/profile.controller.js");
-const auth = require("../middleware/auth");
+import express from "express";
+import { getMyProfile } from "../controllers/profile.controller.js";
+import auth from "../middleware/auth.js";
+
+const router = express.Router();
 
 // @route   GET api/profile/me
 // @desc    Get user's profile
 // @access  Private
-router.get("/me", auth, ProfileController.getMyProfile);
+router.get("/me", auth, getMyProfile);
 
-module.exports = router;
+export default router;

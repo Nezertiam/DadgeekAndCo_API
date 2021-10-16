@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A reusable MERN structure for every MERN application",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "init": "node ./config/init.js",
     "start": "node server",
