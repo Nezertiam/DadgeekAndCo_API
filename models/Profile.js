@@ -23,6 +23,9 @@ const ProfileSchema = new mongoose.Schema({
     tiktok: {
         type: String
     },
+    youtube: {
+        type: String
+    }
 });
 
 const Profile = mongoose.model("Profile", ProfileSchema);
