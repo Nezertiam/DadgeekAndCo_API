@@ -3,6 +3,7 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import config from "config";
 import User from "../models/User.js";
+import Profile from "../models/Profile.js";
 
 // Routes
 
@@ -43,6 +44,10 @@ export const register = async (req, res) => {
 
         // Save the user
         await user.save();
+
+        // Create a new profile for this user and save it
+        const profile = new Profile({ user: user.id })
+        await profile.save();
 
         // Set the user id in the payload of the JWT
         const payload = {
