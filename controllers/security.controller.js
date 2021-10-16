@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 const { validationResult } = require("express-validator");
+const argon2 = require("argon2");
 const jwt = require("jsonwebtoken");
 const config = require("config");
-const argon2 = require("argon2");
-const JWTGenerator = require("../middleware/JWTGenerator");
 
 const User = require("../models/User");
 
@@ -56,8 +55,18 @@ module.exports.register = async (req, res) => {
         }
 
         // Sign JSON and returns it in the callback
-        const token = await JWTGenerator(payload);
-        res.json({ token });
+        jwt.sign(
+            payload,
+            config.get("jwtSecret"),
+            { expiresIn: config.get("jwtExp") },
+            (err, token) => {
+                if (err) {
+                    throw err;
+                } else {
+                    res.status(201).json({ token })
+                }
+            }
+        )
 
     } catch (err) {
         console.error(err.message);
@@ -105,8 +114,18 @@ module.exports.authentication = async (req, res) => {
         }
 
         // Return JsonWebToken
-        const token = await JWTGenerator(payload);
-        res.json({ token });
+        jwt.sign(
+            payload,
+            config.get("jwtSecret"),
+            { expiresIn: config.get("jwtExp") },
+            (err, token) => {
+                if (err) {
+                    throw err;
+                } else {
+                    res.status(200).json({ token })
+                }
+            }
+        )
 
     } catch (err) {
         console.error(err.message);
