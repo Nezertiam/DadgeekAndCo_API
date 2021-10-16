@@ -7,7 +7,7 @@ import Profile from "../models/Profile.js";
 
 // Routes
 
-// @Route /api/users/register
+// @Route /api/security/register
 /**
  * Register function for the API
  * 
@@ -77,7 +77,7 @@ export const register = async (req, res) => {
 }
 
 
-// @Route /api/users/auth
+// @Route /api/security/auth
 /**
  * Authentication function using JWT
  * 
