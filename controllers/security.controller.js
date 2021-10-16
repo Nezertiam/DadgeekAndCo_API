@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const { validationResult } = require("express-validator");
 const argon2 = require("argon2");
 const jwt = require("jsonwebtoken");

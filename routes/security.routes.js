@@ -2,7 +2,7 @@ const router = require("express").Router();
 const SecurityController = require("../controllers/security.controller.js");
 const { check } = require("express-validator");
 
-// @route   POST api/users
+// @route   POST api/security
 // @desc    Register user
 // @access  Public
 router.post("/register", [
@@ -11,12 +11,13 @@ router.post("/register", [
     check("password", "Please enter a password with 8 or more characters.").isLength({ min: 8 })
 ], SecurityController.register);
 
-// @route   POST api/user
+// @route   POST api/security
 // @desc    Authenticate user & get token
 // @access  Public
 router.post("/auth", [
     check("email", "Please include a valid email").isEmail(),
     check("password", "Password is required").exists()
 ], SecurityController.authentication);
+
 
 module.exports = router;
