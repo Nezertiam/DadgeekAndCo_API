@@ -8,7 +8,21 @@ const ProfileSchema = new mongoose.Schema({
     bio: {
         type: String
     },
-
+    avatar: {
+        type: String
+    },
+    twitch: {
+        type: String
+    },
+    twitter: {
+        type: String
+    },
+    instagram: {
+        type: String
+    },
+    tiktok: {
+        type: String
+    },
 });
 
 const Profile = mongoose.model("Profile", ProfileSchema);
