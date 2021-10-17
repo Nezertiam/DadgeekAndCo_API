@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createArticle } from "../controllers/article.controller.js";
+import { createArticle, readArticle } from "../controllers/article.controller.js";
 
 const router = express.Router();
 
@@ -13,5 +13,9 @@ router.post("/new", auth, [
     check("blocks", "Article content cannot be empty.").not().isEmpty()
 ], createArticle);
 
+// @route   GET api/article/:slug
+// @desc    Read an article based on slug
+// @access  Public
+router.get("/:slug", readArticle);
 
 export default router;

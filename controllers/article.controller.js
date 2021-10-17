@@ -20,7 +20,7 @@ export const createArticle = async (req, res) => {
     const { title, description, blocks } = req.body;
     const slug = slugify(title);
 
-    const article = Article.findOne({ slug: slug });
+    const article = await Article.findOne({ slug: slug });
     if (article) return res.status(400).json({ message: "Title already taken. Maybe you already published this article?" });
 
     try {
@@ -40,7 +40,19 @@ export const createArticle = async (req, res) => {
 }
 
 
-// @route /api/article/:article_id
-export const readArticle = (req, res) => {
+// @route /api/article/:slug
+/**
+ * Get and return the article by the slug
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
+export const readArticle = async (req, res) => {
+    const slug = req.params.slug;
 
+    const article = await Article.findOne({ slug: slug });
+
+    if (!article) return res.status(404).json({ message: "Article not found" });
+
+    return res.json({ article })
 }
