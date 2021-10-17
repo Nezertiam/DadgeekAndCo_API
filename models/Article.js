@@ -11,13 +11,20 @@ const ArticleSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        slug: {
+            type: String,
+            required: true
+        },
         photo: {
             type: String
         },
         description: {
             type: String
         },
-        blocks: [Object]
+        blocks: {
+            type: [Object],
+            required: true
+        }
     },
     { timestamps: true }
 )

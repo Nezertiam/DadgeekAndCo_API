@@ -27,6 +27,7 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.10",
     "request": "^2.88.2",
+    "slugify": "^1.6.1",
     "uuidv4": "^6.2.12"
   },
   "devDependencies": {
