@@ -10,6 +10,11 @@ const router = express.Router();
 // @access  Private
 router.get("/me", auth, getMyProfile);
 
+// @route   GET api/profile/user/:user_id
+// @desc    Get user's profile
+// @access  Private
+router.get("/user/:user_id", auth, getProfile);
+
 // @route   GET api/profile/edit
 // @desc    Edit user's profile
 // @access  Private

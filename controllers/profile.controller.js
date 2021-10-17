@@ -25,6 +25,30 @@ export const getMyProfile = async (req, res) => {
     }
 }
 
+// @Route /api/profile/user/:user_id
+/**
+ * Get the user's profile via user ID
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
+export const getProfile = async (req, res) => {
+    try {
+        const profile = await Profile.findOne({ user: req.params.user_id }).populate("user",
+            ["name", "bio", "avatar", "twitch", "twitter", "instagram", "tiktok", "youtube"]
+        );
+        if (!profile) {
+            return res.status(400).json({ message: "There is no profile for this user." })
+        } else {
+            return res.json(profile);
+        }
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Server error." })
+    }
+}
+
 
 // @Route /api/profile/edit
 /**
