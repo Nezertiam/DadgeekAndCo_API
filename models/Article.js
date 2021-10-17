@@ -13,7 +13,8 @@ const ArticleSchema = new mongoose.Schema(
         },
         slug: {
             type: String,
-            required: true
+            required: true,
+            unique: true
         },
         photo: {
             type: String

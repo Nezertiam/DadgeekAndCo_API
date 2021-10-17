@@ -19,6 +19,10 @@ export const createArticle = async (req, res) => {
     // Get the body content and hydrate a new article object, then save it
     const { title, description, blocks } = req.body;
     const slug = slugify(title);
+
+    const article = Article.findOne({ slug: slug });
+    if (article) return res.status(400).json({ message: "Title already taken. Maybe you already published this article?" });
+
     try {
         const article = new Article({
             user: req.user.id,
