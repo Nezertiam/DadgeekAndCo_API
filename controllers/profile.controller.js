@@ -11,7 +11,7 @@ import Profile from "../models/Profile.js";
 export const getMyProfile = async (req, res) => {
     try {
         const profile = await Profile.findOne({ user: req.user.id }).populate("user",
-            ["name", "bio", "avatar", "twitch", "twitter", "instagram", "tiktok", "youtube"]
+            ["name", "email", "date", "bio", "avatar", "twitch", "twitter", "instagram", "tiktok", "youtube"]
         );
         if (!profile) {
             return res.status(400).json({ message: "There is no profile for this user." })

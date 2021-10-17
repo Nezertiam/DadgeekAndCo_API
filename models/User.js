@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
-        require: true
+        required: true
     },
     email: {
         type: String,
@@ -18,7 +18,7 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    role: {
+    roles: {
         type: [String],
         default: ["ROLE_USER"]
     }

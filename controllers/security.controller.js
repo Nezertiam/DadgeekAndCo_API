@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import config from "config";
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
+import uuid from "uuid/v4.js";
 
 // Routes
 
@@ -52,7 +53,8 @@ export const register = async (req, res) => {
         // Set the user id in the payload of the JWT
         const payload = {
             user: {
-                id: user.id // can use .id instead of ._id thanks to mongoose
+                id: user.id, // can use .id instead of ._id thanks to mongoose
+                roles: user.roles
             }
         }
 
@@ -111,7 +113,8 @@ export const authentication = async (req, res) => {
         // Set payload with user's id
         const payload = {
             user: {
-                id: user.id // can use .id instead of ._id thanks to mongoose
+                id: user.id, // can use .id instead of ._id thanks to mongoose
+                roles: user.roles
             }
         }
 
@@ -132,5 +135,47 @@ export const authentication = async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Server error");
+    }
+}
+
+
+// @Route /api/security/delete
+/**
+ * "Delete" user's account and profile by overwriting personal data by other strings
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
+export const deleteMe = async (req, res) => {
+    const uid = uuid();
+    const date = new Date();
+    const email = date.toISOString().replace(/:/g, "-") + uid;
+
+    const userFakeData = {
+        name: "[Profile deleted]",
+        email: email,
+        password: uuid(),
+        role: []
+    }
+
+    if (req.user.roles.includes("ROLE_ADMIN")) {
+        return res.status(400).json({ message: "This account can't be deleted" })
+    }
+
+    try {
+        const user = await User.findByIdAndUpdate(
+            { _id: req.user.id },
+            { $set: userFakeData },
+            { new: true }
+        )
+        await Profile.findOneAndDelete(
+            { user: req.user.id }
+        )
+
+        return res.status(200).json({ message: "Account successfully deleted", user: user })
+
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).json({ message: "Server error." })
     }
 }
