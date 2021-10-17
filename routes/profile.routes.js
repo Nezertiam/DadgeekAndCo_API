@@ -1,6 +1,7 @@
 import express from "express";
-import { getMyProfile } from "../controllers/profile.controller.js";
+import { getMyProfile, editMyProfile } from "../controllers/profile.controller.js";
 import auth from "../middleware/auth.js";
+
 
 const router = express.Router();
 
@@ -8,5 +9,10 @@ const router = express.Router();
 // @desc    Get user's profile
 // @access  Private
 router.get("/me", auth, getMyProfile);
+
+// @route   GET api/profile/edit
+// @desc    Edit user's profile
+// @access  Private
+router.put("/edit", auth, editMyProfile);
 
 export default router;
