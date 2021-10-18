@@ -2,7 +2,7 @@ import { validationResult } from "express-validator";
 import Article from "../models/Article.js"
 import slugify from "slugify";
 
-// @route /api/article/new
+// @route /api/article
 /**
  * Create a new article
  * 
@@ -55,4 +55,45 @@ export const readArticle = async (req, res) => {
     if (!article) return res.status(404).json({ message: "Article not found" });
 
     return res.json({ article })
+}
+
+
+// @route /api/article/:slug
+/**
+ * Edit an article found by its slug
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+export const editArticle = async (req, res) => {
+    // First, validate body content or return an error
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const slug = req.params.slug;
+    const article = await Article.findOne({ slug: slug });
+
+    if (!article) return res.status(404).json({ message: "Article not found" });
+
+    const articleFields = {};
+    const { description, blocks } = req.body;
+    if (description) articleFields.description = description;
+    if (blocks) articleFields.blocks = blocks;
+
+    try {
+        const editedArticle = await Article.findOneAndUpdate(
+            { slug: slug },
+            { $set: articleFields },
+            { new: true }
+        );
+
+        return res.status(200).json(editedArticle);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Server error." })
+    }
+
 }

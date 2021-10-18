@@ -1,14 +1,14 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createArticle, readArticle } from "../controllers/article.controller.js";
+import { createArticle, readArticle, editArticle } from "../controllers/article.controller.js";
 
 const router = express.Router();
 
-// @route   POST api/article/new
+// @route   POST api/article
 // @desc    Create an new article
 // @access  Private
-router.post("/new", auth, [
+router.post("/", auth, [
     check("title", "Title is required.").not().isEmpty(),
     check("blocks", "Article content cannot be empty.").not().isEmpty()
 ], createArticle);
@@ -18,4 +18,10 @@ router.post("/new", auth, [
 // @access  Public
 router.get("/:slug", readArticle);
 
+// @route   PUT api/article/:slug
+// @desc    Edit an article based on slug
+// @access  Private
+router.put("/:slug", auth, editArticle);
+
 export default router;
+
