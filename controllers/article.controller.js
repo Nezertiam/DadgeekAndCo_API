@@ -67,9 +67,6 @@ export const readArticle = async (req, res) => {
  * Edit an article found by its slug
  */
 export const editArticle = async (req, res) => {
-    // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     // Get the user with the id in the token
     const user = await User.findOne({ _id: req.user.id });
@@ -111,11 +108,6 @@ export const editArticle = async (req, res) => {
  * Delete an article using its slug to find it
  */
 export const deleteArticle = async (req, res) => {
-    // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
 
     // Get the user with the id in the token
     const user = await User.findOne({ _id: req.user.id });
