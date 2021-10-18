@@ -17,7 +17,7 @@ export const createArticle = async (req, res) => {
 
     // Get the user with the id in the token
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "Can't authenticate this user" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // Only Authors and Admin can create an article
     const permission = isGranted("ROLE_AUTHOR", user);
