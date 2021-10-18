@@ -3,9 +3,8 @@ import Article from "../models/Article.js";
 import User from "../models/User.js";
 import slugify from "slugify";
 import isGranted from "../services/isGranted.js";
-import mongoose from "mongoose";
 
-// @route /api/article
+// @route POST /api/article
 /**
  * Create a new article
  */
@@ -46,7 +45,7 @@ export const createArticle = async (req, res) => {
 }
 
 
-// @route /api/article/:slug
+// @route GET /api/article/:slug
 /**
  * Get and return the article by the slug
  */
@@ -63,7 +62,7 @@ export const readArticle = async (req, res) => {
 }
 
 
-// @route /api/article/:slug
+// @route PUT /api/article/:slug
 /**
  * Edit an article found by its slug
  */
@@ -85,7 +84,7 @@ export const editArticle = async (req, res) => {
     if (!user.equals(article.user)) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
 
     // The user must still be an anthor to be able to modify its articles
-    if (!user.roles.includes("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
+    if (!isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
 
 
     const articleFields = {};
@@ -103,6 +102,41 @@ export const editArticle = async (req, res) => {
         return res.status(200).json(editedArticle);
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: "Server error." })
+        return res.status(500).json({ message: "Server error" })
+    }
+}
+
+// @route DELETE /api/article/:slug
+/**
+ * Delete an article using its slug to find it
+ */
+export const deleteArticle = async (req, res) => {
+    // First, validate body content or return an error
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Get the user with the id in the token
+    const user = await User.findOne({ _id: req.user.id });
+    if (!user) return res.status(404).json({ message: "Can't authenticate this user" });
+
+    // find article by slug
+    const slug = req.params.slug;
+    const article = await Article.findOne({ slug: slug });
+    if (!article) return res.status(404).json({ message: "Article not found" });
+
+    // Only the author can modify its articles
+    if (!user.equals(article.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
+
+    // The user must still be an anthor to be able to modify its articles
+    if (!isGranted("ROLE_AUTHOR", user)) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" });
+
+    try {
+        await Article.findOneAndDelete({ slug: slug });
+        return res.status(200).json({ message: "Article deleted successfully" })
+    } catch (err) {
+        console.error(err.message);
+        return res.status(500).json({ message: "Server error" })
     }
 }

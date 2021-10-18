@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createArticle, readArticle, editArticle } from "../controllers/article.controller.js";
+import { createArticle, readArticle, editArticle, deleteArticle } from "../controllers/article.controller.js";
 
 const router = express.Router();
 
@@ -22,6 +22,11 @@ router.get("/:slug", readArticle);
 // @desc    Edit an article based on slug
 // @access  Private
 router.put("/:slug", auth, editArticle);
+
+// @route   DELETE api/article/:slug
+// @desc    Delete an article based on slug
+// @access  Private
+router.delete("/:slug", auth, deleteArticle);
 
 export default router;
 
