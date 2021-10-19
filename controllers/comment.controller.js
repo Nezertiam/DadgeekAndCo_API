@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
 import sanitizer from "sanitizer";
+import isGranted from "../services/isGranted.js";
 
 
 // @route POST /api/comment
@@ -91,7 +92,7 @@ export const editComment = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if user is the comment author
-    if (!user.equals(comment.user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
 
     // Get body content
     let text = sanitizer.sanitize(req.body.text);
@@ -125,6 +126,54 @@ export const editComment = async (req, res) => {
         console.error(err);
         return res.status(500).json({ message: "Server error" });
     }
+}
 
 
+// @Route DELETE /api/comment/:id
+/**
+ * Delete a specific comment
+ */
+export const deleteComment = async (req, res) => {
+
+    // Get comment
+    const comment = await Comment.findOne({ _id: req.params.id });
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    // Get user
+    const user = await User.findOne({ _id: req.user.id });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if comment is already deleted
+    if (comment.deleted) return res.status(404).json({ message: "Comment not found" });
+
+    // Grant permission
+    if (!user.equals(comment.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+
+    // Set a new revision
+    let revisionsTable = comment.revisions;
+    const commentRevised = {
+        text: comment.text,
+        updatedAt: comment.updatedAt
+    }
+    revisionsTable.push(commentRevised);
+
+    // Set data
+    let commentFields = {
+        text: "Comment deleted",
+        deleted: true,
+        revisions: revisionsTable
+    };
+
+    // Save changes
+    try {
+        await Comment.findOneAndUpdate(
+            { _id: req.params.id },
+            { $set: commentFields },
+            { new: true }
+        );
+        return res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
+    }
 }

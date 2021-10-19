@@ -16,6 +16,10 @@ const CommentSchema = mongoose.Schema(
         },
         revisions: {
             type: [Object]
+        },
+        deleted: {
+            type: Boolean,
+            default: false
         }
     },
     { timestamps: true }

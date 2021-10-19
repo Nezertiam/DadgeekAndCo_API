@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createComment, readComment, editComment } from "../controllers/comment.controller.js";
+import { createComment, readComment, editComment, deleteComment } from "../controllers/comment.controller.js";
 
 const router = express.Router();
 
@@ -22,5 +22,10 @@ router.get("/:id", readComment);
 // @Desc    Edit a specific comment
 // @access  Private
 router.put("/:id", auth, editComment);
+
+// @Route   DELETE api/comment/:id
+// @Desc    delete a specific comment
+// @access  Private
+router.delete("/:id", auth, deleteComment);
 
 export default router;
