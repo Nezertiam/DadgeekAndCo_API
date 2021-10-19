@@ -25,6 +25,10 @@ const ArticleSchema = new mongoose.Schema(
         blocks: {
             type: [Object],
             required: true
+        },
+        likes: {
+            type: [String],
+            default: []
         }
     },
     { timestamps: true }

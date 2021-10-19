@@ -173,3 +173,37 @@ export const deleteArticle = async (req, res) => {
         return res.status(500).json({ message: "Server error" })
     }
 }
+
+
+// @Route PUT /api/article/:slug/like
+/**
+ * Like a specific comment
+ */
+export const likeArticle = async (req, res) => {
+    // Get comment
+    const article = await Article.findOne({ slug: req.params.slug });
+    if (!article) return res.status(400).json({ message: "Article not found" })
+
+    // get like array
+    const likes = article.likes;
+
+    // If is in array, dislike, else like
+    if (likes.includes(req.user.id)) {
+        const index = likes.indexOf(req.user.id);
+        if (index > -1) likes.splice(index, 1);
+    } else {
+        likes.push(req.user.id);
+    }
+
+    try {
+        await Article.findOneAndUpdate(
+            { slug: req.params.slug },
+            { $set: { likes } },
+            { new: true }
+        );
+        return res.status(200).json({ message: "Article successfully liked" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
