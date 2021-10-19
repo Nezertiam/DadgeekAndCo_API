@@ -166,7 +166,8 @@ export const deleteArticle = async (req, res) => {
 
     try {
         await Article.findOneAndDelete({ slug: slug });
-        return res.status(200).json({ message: "Article deleted successfully" })
+        await Comment.deleteMany({ article: article.id });
+        return res.status(200).json({ message: "Article and comments deleted successfully" })
     } catch (err) {
         console.error(err.message);
         return res.status(500).json({ message: "Server error" })
