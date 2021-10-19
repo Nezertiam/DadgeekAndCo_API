@@ -23,8 +23,13 @@ export const register = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // Get the body content and destructure it
-    const { name, email, password } = req.body;
+    // Get body content
+    const name = sanitizer.sanitize(req.body.name)
+    if (name !== req.body.name) return res.status(400).json({ message: "Name contains forbidden characters" });
+    const email = sanitizer.sanitize(req.body.email)
+    if (email !== req.body.email) return res.status(400).json({ message: "Email contains forbidden characters" });
+    const password = sanitizer.sanitize(req.body.password)
+    if (password !== req.body.password) return res.status(400).json({ message: "Password contains forbidden characters" });
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -93,8 +98,11 @@ export const authentication = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // Get email and password from the body content
-    const { email, password } = req.body;
+    // Get body content
+    const email = sanitizer.sanitize(req.body.email)
+    if (email !== req.body.email) return res.status(400).json({ message: "Email contains forbidden characters" });
+    const password = sanitizer.sanitize(req.body.password)
+    if (password !== req.body.password) return res.status(400).json({ message: "Password contains forbidden characters" });
 
     // Check if user exist
     let user = await User.findOne({ email });
