@@ -53,7 +53,7 @@ export const createComment = async (req, res) => {
 }
 
 
-// @route POST /api/comment/:id
+// @route GET /api/comment/:id
 /**
  * Read a specific comment
  */
@@ -68,4 +68,53 @@ export const readComment = async (req, res) => {
 
     // Return comment
     return res.json({ comment });
+}
+
+
+// @Route PUT /api/comment/:id
+/**
+ * Edit a specific comment
+ */
+export const editComment = async (req, res) => {
+    // First, validate body content or return an error
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Get comment by id
+    const comment = await Comment.findOne({ _id: req.params.id });
+    if (!comment) return res.status(404).json({ message: "Comment not found" });
+
+    // Get user
+    const user = await User.findOne({ _id: req.user.id });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if user is the comment author
+    if (!user.equals(comment.user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+
+    // Get body content
+    let text = sanitizer.sanitize(req.body.text);
+    if (!text) return res.status(400).json({ message: "Invalid content" });
+
+    // Set data
+    let commentFields = {}
+    const revisions = comment.revisions.push(comment);
+    commentFields.revisions = revisions;
+    commentFields.text = text;
+
+    // Save data
+    try {
+        const editedComment = await Comment.findOneAndUpdate(
+            { _id: comment.id },
+            { $set: commentFields },
+            { new: true }
+        )
+        return res.status(200).json({ message: "Comment edited successfully", data: editedComment });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
+    }
+
+
 }

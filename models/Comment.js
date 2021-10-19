@@ -13,6 +13,9 @@ const CommentSchema = mongoose.Schema(
         text: {
             type: String,
             required: true
+        },
+        revisions: {
+            type: [Object]
         }
     },
     { timestamps: true }

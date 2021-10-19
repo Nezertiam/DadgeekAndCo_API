@@ -1,6 +1,7 @@
 import { validationResult } from "express-validator";
 import Article from "../models/Article.js";
 import User from "../models/User.js";
+import Comment from "../models/Comment.js";
 import slugify from "slugify";
 import isGranted from "../services/isGranted.js";
 import sanitizer from "sanitizer";
@@ -83,8 +84,10 @@ export const readArticle = async (req, res) => {
     const article = await Article.findOne({ slug: slug });
     if (!article) return res.status(404).json({ message: "Article not found" });
 
+    const comments = await Comment.find({ article: article.id }).sort({ date: 'desc' })
+
     // Return the article
-    return res.json({ article })
+    return res.json({ article, comments })
 }
 
 
