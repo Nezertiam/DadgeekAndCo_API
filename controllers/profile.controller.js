@@ -41,7 +41,7 @@ export const getProfile = async (req, res) => {
         if (!profile) {
             return res.status(400).json({ message: "There is no profile for this user." })
         } else {
-            return res.json(profile);
+            return res.json({ data: profile });
         }
 
     } catch (err) {
@@ -110,8 +110,7 @@ export const editMyProfile = async (req, res) => {
             { $set: profileFields },
             { new: true }
         );
-
-        return res.status(200).json(profile);
+        return res.status(200).json({ data: profile });
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ message: "Server error." })

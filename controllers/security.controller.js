@@ -67,7 +67,7 @@ export const register = async (req, res) => {
                 if (err) {
                     throw err;
                 } else {
-                    res.status(201).json({ token })
+                    return res.status(201).json({ message: "User created successfully", data: token })
                 }
             }
         )
@@ -127,7 +127,7 @@ export const authentication = async (req, res) => {
                 if (err) {
                     throw err;
                 } else {
-                    res.status(200).json({ token })
+                    return res.status(200).json({ message: "Wait, I know you !", data: token })
                 }
             }
         )

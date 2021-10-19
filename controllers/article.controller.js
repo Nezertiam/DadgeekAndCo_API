@@ -87,7 +87,7 @@ export const readArticle = async (req, res) => {
     const comments = await Comment.find({ article: article.id }).sort({ date: 'desc' })
 
     // Return the article
-    return res.json({ article, comments })
+    return res.json({ data: { article, comments } })
 }
 
 
@@ -135,7 +135,7 @@ export const editArticle = async (req, res) => {
             { new: true }
         );
 
-        return res.status(200).json({ message: "Article edited successfully", article: editedArticle });
+        return res.status(200).json({ message: "Article edited successfully", data: editedArticle });
     } catch (err) {
         console.error(err.message);
         return res.status(500).json({ message: "Server error" })

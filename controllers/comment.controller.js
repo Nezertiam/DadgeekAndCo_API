@@ -67,7 +67,7 @@ export const readComment = async (req, res) => {
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
     // Return comment
-    return res.json({ comment });
+    return res.json({ data: comment });
 }
 
 
