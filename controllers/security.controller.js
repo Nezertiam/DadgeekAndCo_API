@@ -5,6 +5,7 @@ import config from "config";
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 import uuid from "uuid/v4.js";
+import isGranted from "../services/isGranted.js";
 
 // Routes
 
@@ -139,7 +140,7 @@ export const authentication = async (req, res) => {
 }
 
 
-// @Route /api/security/delete
+// @Route DELETE /api/security/delete
 /**
  * "Delete" user's account and profile by overwriting personal data by other strings
  * 
@@ -147,10 +148,20 @@ export const authentication = async (req, res) => {
  * @param {*} res 
  */
 export const deleteMe = async (req, res) => {
+
+    // Get user
+    const user = await User.findOne({ _id: req.user.id });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Admin can't delete himself
+    if (isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "This account can't be deleted" })
+
+    // Generate fake mail
     const uid = uuid();
     const date = new Date();
     const email = date.toISOString().replace(/:/g, "-") + uid;
 
+    // Set data
     const userFakeData = {
         name: "[Profile deleted]",
         email: email,
@@ -158,22 +169,15 @@ export const deleteMe = async (req, res) => {
         role: []
     }
 
-    if (req.user.roles.includes("ROLE_ADMIN")) {
-        return res.status(400).json({ message: "This account can't be deleted" })
-    }
-
+    // Save data
     try {
         const user = await User.findByIdAndUpdate(
             { _id: req.user.id },
             { $set: userFakeData },
             { new: true }
         )
-        await Profile.findOneAndDelete(
-            { user: req.user.id }
-        )
-
-        return res.status(200).json({ message: "Account successfully deleted", user: user })
-
+        await Profile.findOneAndDelete({ user: req.user.id })
+        return res.status(200).json({ message: "Account and profile successfully deleted", user: user })
     } catch (err) {
         console.error(err.message);
         return res.status(500).json({ message: "Server error." })
