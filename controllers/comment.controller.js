@@ -3,7 +3,6 @@ import User from "../models/User.js";
 import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
 import sanitizer from "sanitizer";
-import isGranted from "../services/isGranted.js";
 
 
 // @route POST /api/comment
@@ -92,7 +91,7 @@ export const editComment = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if user is the comment author
-    if (!user.equals(comment.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
 
     // Get body content
     let text = sanitizer.sanitize(req.body.text);
@@ -147,7 +146,7 @@ export const deleteComment = async (req, res) => {
     if (comment.deleted) return res.status(404).json({ message: "Comment not found" });
 
     // Grant permission
-    if (!user.equals(comment.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
 
     // Set a new revision
     let revisionsTable = comment.revisions;

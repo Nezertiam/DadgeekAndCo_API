@@ -3,7 +3,6 @@ import Article from "../models/Article.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import slugify from "slugify";
-import isGranted from "../services/isGranted.js";
 import sanitizer from "sanitizer";
 
 // @route POST /api/article
@@ -22,7 +21,7 @@ export const createArticle = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Only Authors and Admin can create an article
-    const permission = isGranted("ROLE_AUTHOR", user);
+    const permission = user.isGranted("ROLE_AUTHOR");
     if (!permission) return res.status(400).json({ message: "You don't have the permission to do that" });
 
     // Get the body content
@@ -111,7 +110,7 @@ export const editArticle = async (req, res) => {
     if (!user.equals(article.user)) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
 
     // The user must still be an anthor to be able to modify its articles
-    if (!isGranted("ROLE_AUTHOR", user)) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
+    if (user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
 
     // Get body content
     let { description } = req.body;
@@ -159,10 +158,10 @@ export const deleteArticle = async (req, res) => {
     if (!article) return res.status(404).json({ message: "Article not found" });
 
     // Only the author can modify its articles
-    if (!user.equals(article.user) && !isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
 
     // The user must still be an anthor to be able to modify its articles
-    if (!isGranted("ROLE_AUTHOR", user)) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" });
 
     try {
         await Article.findOneAndDelete({ slug: slug });

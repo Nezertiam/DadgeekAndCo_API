@@ -23,5 +23,20 @@ const UserSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+/**
+ * Check if the user has the specified role
+ * 
+ * @param {*} role String
+ */
+UserSchema.methods.isGranted = function (role) {
+    if (typeof role !== "string") throw "Not a string";
+
+    if (this.roles.includes("ROLE_ADMIN") || this.roles.includes(role)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 const User = mongoose.model("user", UserSchema);
 export default User;

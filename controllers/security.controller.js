@@ -6,7 +6,6 @@ import uuid from "uuid/v4.js";
 import config from "config";
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
-import isGranted from "../services/isGranted.js";
 
 // Routes
 
@@ -155,7 +154,7 @@ export const deleteMe = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Admin can't delete himself
-    if (isGranted("ROLE_ADMIN", user)) return res.status(400).json({ message: "This account can't be deleted" })
+    if (user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "This account can't be deleted" })
 
     // Generate fake mail
     const uid = uuid();
