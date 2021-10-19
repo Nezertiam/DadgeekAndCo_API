@@ -160,7 +160,7 @@ export const deleteMe = async (req, res) => {
     // Generate fake mail
     const uid = uuid();
     const date = new Date();
-    const email = date.toISOString().replace(/:/g, "-") + uid;
+    const email = date.toISOString().replace(/:/g, "-") + uid + "@maildeleted.com";
 
     // Set data
     const userFakeData = {
