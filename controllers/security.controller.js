@@ -26,38 +26,37 @@ export const register = async (req, res) => {
     // Get the body content and destructure it
     const { name, email, password } = req.body;
 
-    // Try create and save the new user
+    // Check if user exists
+    let user = await User.findOne({ email });
+    if (user) {
+        return res.status(400).json({ message: "User already exists." });
+    }
+
+    // Hydratation of the new user object 
+    user = new User({
+        name,
+        email,
+        password
+    })
+
+    // Hash password and set the hash as the user's password
+    let hash = await argon2.hash(password);
+    user.password = hash;
+
+    // Create a new profile for this user and save it
+    const profile = new Profile({ user: user.id })
+
+    // Set the user id in the payload of the JWT
+    const payload = {
+        user: {
+            id: user.id // can use .id instead of ._id thanks to mongoose
+        }
+    }
+
     try {
-        // See if user exists, if yes, return an error
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ errors: [{ message: "User already exists." }] });
-        }
-
-        // Hydratation of the new user object 
-        user = new User({
-            name,
-            email,
-            password
-        })
-
-        // Hash password and set the hash as the user's password
-        user.password = await argon2.hash(password);
-
-        // Save the user
+        // Save the user and profile
         await user.save();
-
-        // Create a new profile for this user and save it
-        const profile = new Profile({ user: user.id })
         await profile.save();
-
-        // Set the user id in the payload of the JWT
-        const payload = {
-            user: {
-                id: user.id, // can use .id instead of ._id thanks to mongoose
-                roles: user.roles
-            }
-        }
 
         // Sign JSON and returns it in the callback
         jwt.sign(
@@ -97,28 +96,22 @@ export const authentication = async (req, res) => {
     // Get email and password from the body content
     const { email, password } = req.body;
 
-    // Try authenticate the user
+    // Check if user exist
+    let user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Test if the passwords matches, else return an error
+    const isMatch = await argon2.verify(user.password, password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Set payload with user's id
+    const payload = {
+        user: {
+            id: user.id
+        }
+    }
+
     try {
-        // See if the email exists, else send an error
-        let user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ errors: [{ msg: "Invalid credentials" }] });
-        }
-
-        // Test if the passwords matches, else return an error
-        const isMatch = await argon2.verify(user.password, password);
-        if (!isMatch) {
-            return res.status(400).json({ errors: [{ msg: "Invalid credentials" }] });
-        }
-
-        // Set payload with user's id
-        const payload = {
-            user: {
-                id: user.id, // can use .id instead of ._id thanks to mongoose
-                roles: user.roles
-            }
-        }
-
         // Return JsonWebToken
         jwt.sign(
             payload,
@@ -132,7 +125,6 @@ export const authentication = async (req, res) => {
                 }
             }
         )
-
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Server error");

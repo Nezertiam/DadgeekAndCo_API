@@ -22,10 +22,10 @@ router.post("/auth", [
     check("password", "Password is required").exists()
 ], authentication);
 
-// @route   GET api/security/delete
+// @route   DELETE api/security/delete
 // @desc    "Delete" user's account and profile by overwriting personal data by other strings
 // @access  private
-router.get("/delete", auth, deleteMe);
+router.delete("/delete", auth, deleteMe);
 
 
 export default router;
