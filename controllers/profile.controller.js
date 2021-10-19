@@ -1,4 +1,5 @@
 import Profile from "../models/Profile.js";
+import sanitizer from "sanitizer";
 
 
 // @Route /api/profile/me
@@ -59,9 +60,43 @@ export const getProfile = async (req, res) => {
  */
 export const editMyProfile = async (req, res) => {
 
-    const { bio, twitch, twitter, instagram, tiktok, youtube } = req.body;
+    // Get body content
+    let { bio, twitch, twitter, instagram, tiktok, youtube } = req.body;
     const profileFields = {};
 
+    // Sanitize fields
+    if (bio) {
+        bio = sanitizer.sanitize(bio)
+        if (!bio) return res.status(400).json({ message: "Biography field contains invalid characters." })
+        profileFields.bio = bio;
+    };
+    if (twitch) {
+        twitch = sanitizer.sanitize(twitch)
+        if (!twitch) return res.status(400).json({ message: "Twitch field contains invalid characters." })
+        profileFields.twitch = twitch;
+    };
+    if (twitter) {
+        twitter = sanitizer.sanitize(twitter)
+        if (!twitter) return res.status(400).json({ message: "Twitter field contains invalid characters." })
+        profileFields.twitter = twitter;
+    };
+    if (instagram) {
+        instagram = sanitizer.sanitize(instagram)
+        if (!instagram) return res.status(400).json({ message: "Instagram field contains invalid characters." })
+        profileFields.instagram = instagram;
+    };
+    if (tiktok) {
+        tiktok = sanitizer.sanitize(tiktok)
+        if (!tiktok) return res.status(400).json({ message: "Tiktok field contains invalid characters." })
+        profileFields.tiktok = tiktok;
+    };
+    if (youtube) {
+        youtube = sanitizer.sanitize(youtube)
+        if (!youtube) return res.status(400).json({ message: "Youtube field contains invalid characters." })
+        profileFields.youtube = youtube;
+    };
+
+    // Set data
     if (bio) profileFields.bio = bio;
     if (twitch) profileFields.twitch = twitch;
     if (twitter) profileFields.twitter = twitter;
