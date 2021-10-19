@@ -1,10 +1,11 @@
 import { validationResult } from "express-validator";
+import sanitizer from "sanitizer";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
+import uuid from "uuid/v4.js";
 import config from "config";
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
-import uuid from "uuid/v4.js";
 import isGranted from "../services/isGranted.js";
 
 // Routes

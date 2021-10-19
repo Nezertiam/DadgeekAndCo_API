@@ -20,6 +20,9 @@ const CommentSchema = mongoose.Schema(
         deleted: {
             type: Boolean,
             default: false
+        },
+        likes: {
+            type: [String]
         }
     },
     { timestamps: true }

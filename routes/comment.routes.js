@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createComment, readComment, editComment, deleteComment } from "../controllers/comment.controller.js";
+import { createComment, readComment, editComment, deleteComment, likeComment } from "../controllers/comment.controller.js";
 
 const router = express.Router();
 
@@ -27,5 +27,11 @@ router.put("/:id", auth, editComment);
 // @Desc    delete a specific comment
 // @access  Private
 router.delete("/:id", auth, deleteComment);
+
+// @Route   PUT api/comment/:id/like
+// @Desc    Like a specific comment
+// @access  Private
+router.put("/:id/like", auth, likeComment);
+
 
 export default router;
