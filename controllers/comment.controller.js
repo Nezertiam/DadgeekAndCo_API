@@ -97,11 +97,21 @@ export const editComment = async (req, res) => {
     let text = sanitizer.sanitize(req.body.text);
     if (!text) return res.status(400).json({ message: "Invalid content" });
 
+    // Text has to change
+    if (text === comment.text) return res.status(400).json({ message: "Text must be different to edit the comment" })
+
     // Set data
     let commentFields = {}
-    const revisions = comment.revisions.push(comment);
-    commentFields.revisions = revisions;
+    const commentRevised = {
+        text: comment.text,
+        updatedAt: comment.updatedAt
+    }
+    let revisionsTable = comment.revisions;
+    revisionsTable.push(commentRevised);
+    commentFields.revisions = revisionsTable;
     commentFields.text = text;
+
+
 
     // Save data
     try {
