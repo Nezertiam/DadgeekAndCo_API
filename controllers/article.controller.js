@@ -70,6 +70,34 @@ export const createArticle = async (req, res) => {
 }
 
 
+//@ Route GET /api/article
+/**
+ * Return all articles with pagination
+ */
+export const readArticles = async (req, res) => {
+
+    // Get query params
+    let { page, size, categorie } = req.query;
+
+    // If some params are missing
+    if (!page) page = 1;
+    if (!size) size = 10;
+
+    // Need because params are Strings
+    const limit = parseInt(size);
+
+    // Set offset
+    const skip = (parseInt(page) - 1) * limit;
+
+    // We pass 1 for sorting data in 
+    // ascending order using ids
+    const articles = await Article.find().skip(skip).limit(limit)
+    if (articles.length < 1) return res.status(404).json({ message: "No more articles" });
+
+    return res.status(200).json({ message: "Articles found", data: articles });
+}
+
+
 // @route GET /api/article/:slug
 /**
  * Get and return the article by the slug

@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "../middleware/auth.js";
 import { check } from "express-validator";
-import { createArticle, readArticle, editArticle, deleteArticle, likeArticle } from "../controllers/article.controller.js";
+import { createArticle, readArticle, readArticles, editArticle, deleteArticle, likeArticle } from "../controllers/article.controller.js";
 
 const router = express.Router();
 
@@ -12,6 +12,11 @@ router.post("/", auth, [
     check("title", "Title is required.").not().isEmpty(),
     check("blocks", "Article content cannot be empty.").not().isEmpty()
 ], createArticle);
+
+// @route   GET api/article
+// @desc    Read all article based on pagination
+// @access  Public
+router.get("/", readArticles);
 
 // @route   GET api/article/:slug
 // @desc    Read an article based on slug

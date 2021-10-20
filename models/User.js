@@ -26,7 +26,7 @@ const UserSchema = new mongoose.Schema(
 /**
  * Check if the user has the specified role
  * 
- * @param {*} role String
+ * @param {String} role The role you want to check
  */
 UserSchema.methods.isGranted = function (role) {
     if (typeof role !== "string") throw "Not a string";
