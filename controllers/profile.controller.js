@@ -60,40 +60,33 @@ export const getProfile = async (req, res) => {
  */
 export const editMyProfile = async (req, res) => {
 
-    // Get body content
-    let { bio, twitch, twitter, instagram, tiktok, youtube } = req.body;
     const profileFields = {};
 
+
     // Sanitize fields
-    if (bio) {
-        bio = sanitizer.sanitize(bio)
-        if (!bio) return res.status(400).json({ message: "Biography field contains invalid characters." })
-        profileFields.bio = bio;
+    if (req.body.bio && typeof req.body.bio === "string") {
+        bio = sanitizer.sanitize(req.body.bio)
+        if (bio === req.body.bio) profileFields.bio = bio;
     };
-    if (twitch) {
-        twitch = sanitizer.sanitize(twitch)
-        if (!twitch) return res.status(400).json({ message: "Twitch field contains invalid characters." })
-        profileFields.twitch = twitch;
+    if (req.body.twitch && typeof req.body.twitch === "string") {
+        twitch = sanitizer.sanitize(req.body.twitch)
+        if (twitch === req.body.twitch) profileFields.twitch = twitch;
     };
-    if (twitter) {
-        twitter = sanitizer.sanitize(twitter)
-        if (!twitter) return res.status(400).json({ message: "Twitter field contains invalid characters." })
-        profileFields.twitter = twitter;
+    if (req.body.twitter && typeof req.body.twitter === "string") {
+        twitter = sanitizer.sanitize(req.body.twitter)
+        if (twitter === req.body.twitter) profileFields.twitter = twitter;
     };
-    if (instagram) {
-        instagram = sanitizer.sanitize(instagram)
-        if (!instagram) return res.status(400).json({ message: "Instagram field contains invalid characters." })
-        profileFields.instagram = instagram;
+    if (req.body.instagram && typeof req.body.instagram === "string") {
+        instagram = sanitizer.sanitize(req.body.instagram)
+        if (instagram === req.body.instagram) profileFields.instagram = instagram;
     };
-    if (tiktok) {
-        tiktok = sanitizer.sanitize(tiktok)
-        if (!tiktok) return res.status(400).json({ message: "Tiktok field contains invalid characters." })
-        profileFields.tiktok = tiktok;
+    if (req.body.tiktok && typeof req.body.tiktok === "string") {
+        tiktok = sanitizer.sanitize(req.body.tiktok)
+        if (tiktok === req.body.tiktok) profileFields.tiktok = tiktok;
     };
-    if (youtube) {
-        youtube = sanitizer.sanitize(youtube)
-        if (!youtube) return res.status(400).json({ message: "Youtube field contains invalid characters." })
-        profileFields.youtube = youtube;
+    if (req.body.youtube && typeof req.body.youtube === "string") {
+        youtube = sanitizer.sanitize(req.body.youtube)
+        if (youtube === req.body.youtube) profileFields.youtube = youtube;
     };
 
     // Set data
