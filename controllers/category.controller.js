@@ -12,33 +12,62 @@ import Category from "../models/Category.js";
  * Create a new category
  */
 export const createCategory = async (req, res) => {
-    // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+
+    // STEP 1 : LET EXPRESS CHECK REQUIRED FIELDS
+
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    errors = [];
+
+
+
+    // STEP 2 : CHECK TYPES AND GRANT PERSMISSION TO AVOID EXECUTION ERRORS
+
+    // check types
+    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permissions
     const user = await User.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "No permission" });
 
-    // Get body content
+
+
+    // STEP 3 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate title
     const title = sanitizer.sanitize(req.body.title);
-    if (title !== req.body.title) return res.status(400).json({ message: "Title contains invalid characters" });
+    if (title !== req.body.title) errors.push({ message: "Title contains invalid characters" });
 
-    let desc;
-    if (req.body.description) {
-        desc = sanitizer.sanitize(req.body.description);
-        if (desc !== req.body.description) return res.status(400).json({ message: "Description contains invalid characters" });
-    }
-
-    // Create slug
+    // Create slug based on title
     const slug = slugify(title);
+    const category = await Category.findOne({ slug: slug });
+    if (category) errors.push({ message: "Category already exists" });
+
+    // Validate facultative description
+    let description;
+    if (req.body.description) description = sanitizer.sanitize(req.body.description);
+    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 4 : SET THE GENERATED DATA
 
     // Set data
-    const categoryFields = { title, slug };
-    if (desc) categoryFields.description = desc;
+    const categoryFields = {
+        title,
+        slug,
+        description
+    };
+
+
+
+    // STEP 5 : SAVE THE DATA
 
     try {
         const category = new Category(categoryFields);
@@ -82,6 +111,15 @@ export const getCategory = async (req, res) => {
  * Edit a category
  */
 export const editCategory = async (req, res) => {
+
+    let errors = [];
+
+
+    // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
+
+    // Check types
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -91,23 +129,36 @@ export const editCategory = async (req, res) => {
     const category = await Category.findOne({ slug: req.params.slug })
     if (!category) return res.status(404).json({ message: "Category not found" });
 
-    // Get body content and set data
-    let categoryFields = {};
-    if (req.body.title) {
-        const title = sanitizer.sanitize(req.body.title);
-        if (title !== req.body.title) return res.status(400).json({ message: "Title contains invalid characters" });
-        categoryFields.title = title;
-    }
+
+
+    // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate facultative description
+    let description;
     if (req.body.description) {
-        const desc = sanitizer.sanitize(req.body.description);
-        if (desc !== req.body.description) return res.status(400).json({ message: "Description contains invalid characters" });
-        categoryFields.description = desc;
+        description = sanitizer.sanitize(req.body.description);
+        if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
     }
+
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 3 : SET FIELDS DATAS
+
+    const categoryFields = {
+        description
+    };
+
+
+
+    // STEP 4 : SAVE DATAS
 
     // save changes
     try {
         const editedCategory = await Category.findOneAndUpdate(
-            { slug: category.slug },
+            { slug: req.params.slug },
             { $set: categoryFields },
             { new: true }
         );

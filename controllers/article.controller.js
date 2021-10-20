@@ -37,7 +37,7 @@ export const createArticle = async (req, res) => {
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "Permission required" });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ message: "Permission required" });
 
 
 
@@ -215,16 +215,20 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-
+    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ message: "Nothing to update" });
 
 
     // STEP 3 : SET FIELDS DATAS
 
-    const articleFields = {};
-    if (description) articleFields.description = description;
-    if (categories) articleFields.categories = categories;
-    if (blocks) articleFields.blocks = blocks;
+    const articleFields = {
+        description,
+        categories,
+        blocks
+    };
 
+
+
+    // STEP 4 : SAVE DATAS
 
     try {
         const editedArticle = await Article.findOneAndUpdate(
