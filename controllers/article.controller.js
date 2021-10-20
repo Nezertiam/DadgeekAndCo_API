@@ -1,6 +1,7 @@
 import { validationResult } from "express-validator";
 import slugify from "slugify";
 import sanitizer from "sanitizer";
+import mongoose from "mongoose";
 
 import Article from "../models/Article.js";
 import User from "../models/User.js";
@@ -43,7 +44,7 @@ export const createArticle = async (req, res) => {
     if (!title) errors.push({ message: "Title cannot be empty" });
 
     const description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ message: "Description contains unvalid characters" });
+    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
 
     // Get blocks and apply verification for each one
     let blocks = [];
@@ -71,6 +72,21 @@ export const createArticle = async (req, res) => {
     if (blocksErrors.length > 0) return res.status(400).json({ errors: errors, blocksErrors: blocksErrors });
 
 
+
+    // Check if categories exist
+    const categories = await Category.find({
+        '_id': { $in: req.body.categories }
+    });
+    if (categories.length !== req.body.categories.length) return res.status(400).json({ message: "One or more categories don't exist" });
+
+    // Convert categories into id strings if category isn't "deleted"
+    let boolError = false;
+    categories.map((category) => {
+        if (category.deleted === true) boolError = true;
+    });
+    if (boolError) return res.status(404).json({ message: "One or more categories don't exist" });
+
+
     // Create slug based on title
     let slug = slugify(title);
     slug = sanitizer.sanitize(slug);
@@ -90,6 +106,7 @@ export const createArticle = async (req, res) => {
     const articleFields = {
         user: req.user.id,
         slug: slug,
+        categories: req.body.categories,
         title,
         description,
         blocks
