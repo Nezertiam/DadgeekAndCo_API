@@ -17,6 +17,10 @@ const CategorySchema = new mongoose.Schema({
     articles: {
         type: [mongoose.Schema.Types.String],
         default: []
+    },
+    deleted: {
+        type: Boolean,
+        default: false
     }
 })
 
