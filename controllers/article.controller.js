@@ -1,9 +1,11 @@
 import { validationResult } from "express-validator";
+import slugify from "slugify";
+import sanitizer from "sanitizer";
+
 import Article from "../models/Article.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
-import slugify from "slugify";
-import sanitizer from "sanitizer";
+import Category from "../models/Category.js";
 
 // @route POST /api/article
 /**
@@ -77,7 +79,7 @@ export const createArticle = async (req, res) => {
 export const readArticles = async (req, res) => {
 
     // Get query params
-    let { page, size, categorie } = req.query;
+    let { page, size, category } = req.query;
 
     // If some params are missing
     if (!page) page = 1;
@@ -89,9 +91,15 @@ export const readArticles = async (req, res) => {
     // Set offset
     const skip = (parseInt(page) - 1) * limit;
 
-    // We pass 1 for sorting data in 
-    // ascending order using ids
-    const articles = await Article.find().skip(skip).limit(limit)
+    // exec queries
+    let articles;
+    if (category) {
+        const categoryObject = await Category.findOne({ slug: category });
+        if (!categoryObject) return res.status(404).json({ message: "Category not found" });
+        articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit);
+    } else {
+        articles = await Article.find().skip(skip).limit(limit)
+    }
 
     if (articles.length < 1) return res.status(404).json({ message: "No more articles or no articles created yet" });
     return res.status(200).json({ message: "Articles found", data: articles });

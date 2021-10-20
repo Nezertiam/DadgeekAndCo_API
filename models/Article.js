@@ -7,6 +7,11 @@ const ArticleSchema = new mongoose.Schema(
             ref: "user",
             required: true
         },
+        categories: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: "category",
+            default: []
+        },
         title: {
             type: String,
             required: true
