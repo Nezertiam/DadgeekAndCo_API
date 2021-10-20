@@ -7,19 +7,32 @@ import Article from "../models/Article.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import Category from "../models/Category.js";
+import validate from "../services/validation.js";
 
 // @route POST /api/article
 /**
  * Create a new article
  */
 export const createArticle = async (req, res) => {
-    // First, validate body content or return an error
+
+    // STEP 1 : LET EXPRESS CHECK REQUIRED FIELDS
+
     let errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    errors = []    // reset errors
 
 
-    // reset errors
-    errors = []
+
+    // STEP 2 : CHECK TYPES AND GRANT PERSMISSION TO AVOID EXECUTION ERRORS
+
+    // Check types
+    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (!Array.isArray(req.body.blocks)) errors.push({ message: "Bad syntax on blocks property" });
+    if (!Array.isArray(req.body.categories)) errors.push({ message: "Bad syntax on categories property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+    // Blocks can't be empty array
+    if (req.body.blocks.length < 1) return res.status(400).json({ message: "Article content missing" });
 
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
@@ -27,92 +40,58 @@ export const createArticle = async (req, res) => {
     if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "Permission required" });
 
 
-    // Check syntax
-    if (typeof req.body.blocks !== 'object') errors.push({ message: "Bad syntax on blocks property" });
-    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
-    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
-    // Blocks can't be empty array
-    if (req.body.blocks.length < 1) return res.status(400).json({ message: "Article content missing" });
+    // STEP 3 : VALIDATE AND GENERATE FIELDS DATAS
 
-
-    // Validate each field
+    // Validate required title
     const title = sanitizer.sanitize(req.body.title);
     if (title !== req.body.title) errors.push({ message: "Title contains invalid characters" });
     if (!title) errors.push({ message: "Title cannot be empty" });
 
-    const description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
-
-    // Get blocks and apply verification for each one
-    let blocks = [];
-    let blocksErrors = []
-    let counter = 1;
-    req.body.blocks.map((block) => {
-        // Check if type and content are defined in block
-        if (!block.type) blocksErrors.push({ message: "Block n°" + counter + " is missing type" });
-        if (!block.content) blocksErrors.push({ message: "Block n°" + counter + " is missing content" });
-
-        // Sanitize fields
-        const safeType = sanitizer.sanitize(block.type);
-        if (!safeType || safeType !== block.type) blocksErrors.push({ message: "Block n°" + counter + " has invalid character for type" });
-        const safeContent = sanitizer.sanitize(block.content);
-        if (!safeContent || safeContent !== block.content) blocksErrors.push({ message: "Block n°" + counter + " has invalid character for content" });
-
-        // Set data in final array
-        const safeBlock = {
-            type: safeType,
-            content: safeContent
-        };
-        blocks.push(safeBlock);
-        counter++;
-    })
-    if (blocksErrors.length > 0) return res.status(400).json({ errors: errors, blocksErrors: blocksErrors });
-
-
-
-    // Check if categories exist
-    const categories = await Category.find({
-        '_id': { $in: req.body.categories }
-    });
-    if (categories.length !== req.body.categories.length) return res.status(400).json({ message: "One or more categories don't exist" });
-
-    // Convert categories into id strings if category isn't "deleted"
-    let boolError = false;
-    categories.map((category) => {
-        if (category.deleted === true) boolError = true;
-    });
-    if (boolError) return res.status(404).json({ message: "One or more categories don't exist" });
-
-
     // Create slug based on title
     let slug = slugify(title);
     slug = sanitizer.sanitize(slug);
-    if (!slug) return res.status(400).json({ message: "Title contains invalid characters" })
-    if (errors.length > 0) return res.status(400).json({ errors: errors });
-
-
+    if (!slug) errors.push({ message: "Slug creation failed because of invalid title" });
     // Test if article already exists based on slug
     const article = await Article.findOne({ slug: slug });
-    if (article) return res.status(400).json({ message: "Title already taken. Maybe you already published this article?" });
+    if (article) errors.push({ message: "Title already taken. Maybe you already published this article?" });
+
+    // Validate facultative description
+    let description;
+    if (req.body.description) description = sanitizer.sanitize(req.body.description);
+    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+
+    // Get blocks and verify all blocks
+    const results = validate.blocks(req.body.blocks);
+    if (!results.fullfilled) errors.push({ errorsOnBlocks: results.errors });
+    const blocks = results.data;
+
+    // Check if categories exist
+    const results2 = await validate.categories(req.body.categories); // TODO : Turn this function into a promise
+    if (!results2.fullfilled) errors.push({ errorsOnCategories: results2.errors });
+    const categories = results2.data;
+
+    // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
 
+    // STEP 4 : SET THE GENERATED DATA
 
-    // set data
     const articleFields = {
         user: req.user.id,
         slug: slug,
-        categories: req.body.categories,
+        categories: categories,
         title,
         description,
         blocks
     }
 
-    // save data
+
+
+    // STEP 5 : SAVE THE DATA
+
     try {
         const article = new Article(articleFields)
         await article.save();
@@ -182,42 +161,74 @@ export const readArticle = async (req, res) => {
 /**
  * Edit an article found by its slug
  */
-export const editArticle = async (req, res) => {
+export const editArticle = async (req, res) => {        // TODO : Refacto + block validation
 
-    // Get the user with the id in the token
+    let errors = [];
+
+
+    // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
+
+    // Check types
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ message: "Bad syntax on blocks property" });
+    if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ message: "Bad syntax on categories property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+    // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "Can't authenticate this user" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // find article by slug
-    const slug = sanitizer.sanitize(req.params.slug);
-    if (!slug) return res.status(400).json({ message: "Slug contains unvalid characters" })
-    const article = await Article.findOne({ slug: slug });
+    const article = await Article.findOne({ slug: req.params.slug });
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    // Only the author can modify its articles
-    if (!user.equals(article.user)) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
+    // Grant permission (article author + admin)
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
 
-    // The user must still be an anthor to be able to modify its articles
-    if (user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
 
-    // Get body content
-    let { description } = req.body;
 
-    // Sanitize fields
+    // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate facultative description
+    let description;
+    if (req.body.description) {
+        description = sanitizer.sanitize(req.body.description);
+        if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+    }
+
+    // Validate facultative blocks
+    let blocks;
+    if (req.body.blocks) {
+        const results = validate.blocks(req.body.blocks);
+        if (!results.fullfilled) errors.push({ errorsOnBlocks: results.errors });
+        blocks = results.data;
+    }
+
+    // Validate facultative categories
+    let categories;
+    if (req.body.categories) {
+        const results2 = await validate.categories(req.body.categories);
+        if (!results2.fullfilled) errors.push({ errorsOnCategories: results2.errors });
+        categories = results2.data;
+    }
+
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 3 : SET FIELDS DATAS
+
     const articleFields = {};
-    if (description) articleFields.description = sanitizer.sanitize(description);
-    let blocks = [];
-    req.body.blocks.map((block) => {
-        const safeBlock = {};
-        safeBlock.type = sanitizer.sanitize(block.type);
-        safeBlock.content = sanitizer.sanitize(block.content);
-        blocks.push(safeBlock);
-    })
-    if (blocks.length > 0) articleFields.blocks = blocks;
+    if (description) articleFields.description = description;
+    if (categories) articleFields.categories = categories;
+    if (blocks) articleFields.blocks = blocks;
+
 
     try {
         const editedArticle = await Article.findOneAndUpdate(
-            { slug: slug },
+            { slug: req.params.slug },
             { $set: articleFields },
             { new: true }
         );
