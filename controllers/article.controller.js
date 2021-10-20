@@ -13,56 +13,91 @@ import Category from "../models/Category.js";
  */
 export const createArticle = async (req, res) => {
     // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    // Get the user with the id in the token
+
+    // reset errors
+    errors = []
+
+    // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "Permission required" });
 
-    // Only Authors and Admin can create an article
-    const permission = user.isGranted("ROLE_AUTHOR");
-    if (!permission) return res.status(400).json({ message: "You don't have the permission to do that" });
 
-    // Get the body content
-    let { title, description, blocks } = req.body;
-    if (!title) return res.status(400).json({ message: "Title missing" });
-    if (!description) return res.status(400).json({ message: "Description missing" });
-    if (typeof blocks !== 'object') return res.status(400).json({ message: "Bad syntax" });
-    if (blocks.length === 0) return res.status(400).json({ message: "Article content missing" });
+    // Check syntax
+    if (typeof req.body.blocks !== 'object') errors.push({ message: "Bad syntax on blocks property" });
+    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
-    // Sanitize all fields
-    let rawTitle = title;
-    title = sanitizer.sanitize(req.body.title);
-    if (!title || title !== rawTitle) return res.status(400).json({ message: "Title contains unvalid characters" })
-    description = sanitizer.sanitize(req.body.description);
-    if (!description) return res.status(400).json({ message: "Decription contains unvalid characters" })
-    blocks = [];
+
+    // Blocks can't be empty array
+    if (req.body.blocks.length < 1) return res.status(400).json({ message: "Article content missing" });
+
+
+    // Validate each field
+    const title = sanitizer.sanitize(req.body.title);
+    if (title !== req.body.title) errors.push({ message: "Title contains invalid characters" });
+    if (!title) errors.push({ message: "Title cannot be empty" });
+
+    const description = sanitizer.sanitize(req.body.description);
+    if (description !== req.body.description) errors.push({ message: "Description contains unvalid characters" });
+
+    // Get blocks and apply verification for each one
+    let blocks = [];
+    let blocksErrors = []
+    let counter = 1;
     req.body.blocks.map((block) => {
-        const safeBlock = {};
-        safeBlock.type = sanitizer.sanitize(block.type);
-        safeBlock.content = sanitizer.sanitize(block.content);
+        // Check if type and content are defined in block
+        if (!block.type) blocksErrors.push({ message: "Block n°" + counter + " is missing type" });
+        if (!block.content) blocksErrors.push({ message: "Block n°" + counter + " is missing content" });
+
+        // Sanitize fields
+        const safeType = sanitizer.sanitize(block.type);
+        if (!safeType || safeType !== block.type) blocksErrors.push({ message: "Block n°" + counter + " has invalid character for type" });
+        const safeContent = sanitizer.sanitize(block.content);
+        if (!safeContent || safeContent !== block.content) blocksErrors.push({ message: "Block n°" + counter + " has invalid character for content" });
+
+        // Set data in final array
+        const safeBlock = {
+            type: safeType,
+            content: safeContent
+        };
         blocks.push(safeBlock);
+        counter++;
     })
+    if (blocksErrors.length > 0) return res.status(400).json({ errors: errors, blocksErrors: blocksErrors });
+
 
     // Create slug based on title
     let slug = slugify(title);
     slug = sanitizer.sanitize(slug);
-    if (!slug) return res.status(400).json({ message: "Title contains unvalid characters" })
+    if (!slug) return res.status(400).json({ message: "Title contains invalid characters" })
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
 
     // Test if article already exists based on slug
     const article = await Article.findOne({ slug: slug });
     if (article) return res.status(400).json({ message: "Title already taken. Maybe you already published this article?" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+
+    // set data
+    const articleFields = {
+        user: req.user.id,
+        slug: slug,
+        title,
+        description,
+        blocks
+    }
+
+    // save data
     try {
-        const article = new Article({
-            user: req.user.id,
-            slug: slug,
-            title,
-            description,
-            blocks
-        })
+        const article = new Article(articleFields)
         await article.save();
         res.status(201).json({ message: "Article successfully created!", data: article });
     } catch (err) {
