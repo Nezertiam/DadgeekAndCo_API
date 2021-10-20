@@ -189,22 +189,32 @@ export const likeComment = async (req, res) => {
 
     // get like array
     const likes = comment.likes;
+    let nblikes = likes.length;
+    let hasLiked = true;
 
     // If is in array, dislike, else like
     if (likes.includes(req.user.id)) {
         const index = likes.indexOf(req.user.id);
         if (index > -1) likes.splice(index, 1);
+        nblikes = likes.length;
+        hasLiked = false;
     } else {
         likes.push(req.user.id);
+        nblikes = likes.length;
+        hasLiked = true;
     }
 
     try {
         await Comment.findOneAndUpdate(
             { _id: req.params.id },
-            { $set: { likes } },
+            { $set: { likes, nblikes } },
             { new: true }
         );
-        return res.status(200).json({ message: "Comment successfully liked" });
+        if (hasLiked) {
+            return res.status(200).json({ message: "Comment liked" });
+        } else {
+            return res.status(200).json({ message: "Comment disliked" })
+        }
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: "Server error" });

@@ -83,7 +83,7 @@ export const readArticle = async (req, res) => {
     const article = await Article.findOne({ slug: slug });
     if (!article) return res.status(404).json({ message: "Article not found" });
 
-    const comments = await Comment.find({ article: article.id }).sort({ date: 'desc' })
+    const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' })
 
     // Return the article
     return res.json({ data: { article, comments } })

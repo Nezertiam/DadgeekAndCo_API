@@ -22,7 +22,12 @@ const CommentSchema = mongoose.Schema(
             default: false
         },
         likes: {
-            type: [String]
+            type: [String],
+            default: []
+        },
+        nblikes: {
+            type: Number,
+            default: 0
         }
     },
     { timestamps: true }
