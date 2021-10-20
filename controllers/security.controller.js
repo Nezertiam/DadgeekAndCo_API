@@ -18,18 +18,26 @@ import Profile from "../models/Profile.js";
  */
 export const register = async (req, res) => {
     // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    errors = []    // reset errors
+
+    // Check types
+    if (typeof req.body.name !== 'string') errors.push({ message: "Bad syntax on name property" });
+    if (typeof req.body.email !== 'string') errors.push({ message: "Bad syntax on email property" });
+    if (typeof req.body.password !== 'string') errors.push({ message: "Bad syntax on password property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
 
     // Get body content
     const name = sanitizer.sanitize(req.body.name)
-    if (name !== req.body.name) return res.status(400).json({ message: "Name contains forbidden characters" });
+    if (name !== req.body.name) errors.push({ message: "Name contains forbidden characters" });
     const email = sanitizer.sanitize(req.body.email)
-    if (email !== req.body.email) return res.status(400).json({ message: "Email contains forbidden characters" });
+    if (email !== req.body.email) errors.push({ message: "Email contains forbidden characters" });
     const password = sanitizer.sanitize(req.body.password)
-    if (password !== req.body.password) return res.status(400).json({ message: "Password contains forbidden characters" });
+    if (password !== req.body.password) errors.push({ message: "Password contains forbidden characters" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -93,10 +101,14 @@ export const register = async (req, res) => {
  */
 export const authentication = async (req, res) => {
     // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    errors = []    // reset errors
+
+    // Check types
+    if (typeof req.body.email !== 'string') errors.push({ message: "Bad syntax on email property" });
+    if (typeof req.body.password !== 'string') errors.push({ message: "Bad syntax on password property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get body content
     const email = sanitizer.sanitize(req.body.email)
