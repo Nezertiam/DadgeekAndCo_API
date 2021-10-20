@@ -119,6 +119,7 @@ export const editCategory = async (req, res) => {
 
     // Check types
     if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });

@@ -39,6 +39,9 @@ export const createArticle = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ message: "Permission required" });
 
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
 
 
 
@@ -186,6 +189,8 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
     if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
     if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
 
+    // End of step returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
     // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS

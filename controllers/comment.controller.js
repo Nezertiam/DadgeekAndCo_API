@@ -10,38 +10,72 @@ import sanitizer from "sanitizer";
  * Create a new comment for an article
  */
 export const createComment = async (req, res) => {
-    // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
 
-    // Get body content
-    let { slug, text } = req.body;
-    if (!slug) return res.status(400).json({ message: "Slug missing" });
-    if (!text) return res.status(400).json({ message: "Comment content missing" });
+    // STEP 1 : LET EXPRESS CHECK REQUIRED FIELDS
 
-    // Sanitize body content
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    errors = []    // reset errors
+
+
+
+    // STEP 2 : CHECK TYPES TO AVOID EXECUTION ERRORS
+
+    // Check types
+    if (typeof req.body.slug !== 'string') errors.push({ message: "Bad syntax on slug property" });
+    if (typeof req.body.text !== 'string') errors.push({ message: "Bad syntax on text property" });
+
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+
+    // STEP 3 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate slug
     slug = sanitizer.sanitize(req.body.slug);
+    if (slug !== req.body.slug) errors.push({ message: "Slug contains invalid characters" });
+    if (!slug) errors.push({ message: "Slug cannot be empty" });
+
+    // Validate text
     text = sanitizer.sanitize(req.body.text);
-    if (!slug) return res.status(400).json({ message: "Slug contains invalid characters" });
-    if (!text) return res.status(400).json({ message: "Comment content contains invalid characters" });
+    if (text !== req.body.text) errors.push({ message: "Comment content contains invalid characters" });
+    if (!text) errors.push({ message: "Text cannot be empty" });
 
-    // Check user exists
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 4 : GRANT PERSMISSION
+
+    // Validate user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) errors.push({ message: "User not found" });
 
-    // Check article exists
+    // Validate article
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: "Article not found" });
+    if (!article) errors.push({ message: "Article not found" });
 
-    // Set data
-    const commentFields = {};
-    commentFields.user = req.user.id;
-    commentFields.article = article.id;
-    commentFields.text = text;
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(404).json({ errors: errors });
 
-    // Save comment
+
+
+
+    // STEP 5 : SET FIELDS DATAS
+
+    const commentFields = {
+        user: req.user.id,
+        article: article.id,
+        text: text
+    };
+
+
+
+    // STEP 6 : SAVE DATAS
+
     try {
         const comment = new Comment(commentFields)
         await comment.save();
@@ -76,11 +110,31 @@ export const readComment = async (req, res) => {
  * Edit a specific comment
  */
 export const editComment = async (req, res) => {
-    // First, validate body content or return an error
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+
+    let errors = [];
+
+
+    // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
+
+    // Check types
+    if (req.body.text && typeof req.body.text !== 'string') errors.push({ message: "Bad syntax on text property" });
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate text
+    let text = sanitizer.sanitize(req.body.text);
+    if (text !== req.body.text) errors.push({ message: "Invalid content" });
+    if (!text) errors.push({ message: "Text must defined" });
+
+    // End of step, returns errors
+    if (errors.length > 0) return res.status(400).json({ errors: errors });
+
+
+
+    // STEP 3 : GRANT PERSMISSION
 
     // Get comment by id
     const comment = await Comment.findOne({ _id: req.params.id });
@@ -93,27 +147,30 @@ export const editComment = async (req, res) => {
     // Check if user is the comment author
     if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
 
-    // Get body content
-    let text = sanitizer.sanitize(req.body.text);
-    if (!text) return res.status(400).json({ message: "Invalid content" });
-
     // Text has to change
     if (text === comment.text) return res.status(400).json({ message: "Text must be different to edit the comment" })
 
-    // Set data
-    let commentFields = {}
+
+
+    // STEP 4 : SET FIELDS DATAS
+
     const commentRevised = {
         text: comment.text,
         updatedAt: comment.updatedAt
     }
-    let revisionsTable = comment.revisions;
-    revisionsTable.push(commentRevised);
-    commentFields.revisions = revisionsTable;
-    commentFields.text = text;
+
+    let revisionsArray = comment.revisions;
+    revisionsArray.push(commentRevised);
+
+    const commentFields = {
+        revisions: revisionsArray,
+        text: text
+    }
 
 
 
-    // Save data
+    // STEP 5 : SAVE DATA
+
     try {
         const editedComment = await Comment.findOneAndUpdate(
             { _id: comment.id },
@@ -146,7 +203,7 @@ export const deleteComment = async (req, res) => {
     if (comment.deleted) return res.status(404).json({ message: "Comment not found" });
 
     // Grant permission
-    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "Can't edit a comment that isn't yours" });
 
     // Set a new revision
     let revisionsTable = comment.revisions;
