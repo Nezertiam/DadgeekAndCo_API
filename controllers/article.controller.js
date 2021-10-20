@@ -92,8 +92,8 @@ export const readArticles = async (req, res) => {
     // We pass 1 for sorting data in 
     // ascending order using ids
     const articles = await Article.find().skip(skip).limit(limit)
-    if (articles.length < 1) return res.status(404).json({ message: "No more articles" });
 
+    if (articles.length < 1) return res.status(404).json({ message: "No more articles or no articles created yet" });
     return res.status(200).json({ message: "Articles found", data: articles });
 }
 
