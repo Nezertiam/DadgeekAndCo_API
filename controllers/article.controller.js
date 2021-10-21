@@ -1,13 +1,14 @@
 import { validationResult } from "express-validator";
 import slugify from "slugify";
 import sanitizer from "sanitizer";
-import mongoose from "mongoose";
 
 import Article from "../models/Article.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import Category from "../models/Category.js";
+
 import validate from "../services/validation.js";
+import messages from "../services/messages.js"
 
 // @route POST /api/article
 /**
@@ -26,10 +27,10 @@ export const createArticle = async (req, res) => {
     // STEP 2 : CHECK TYPES AND GRANT PERSMISSION TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
-    if (!Array.isArray(req.body.blocks)) errors.push({ message: "Bad syntax on blocks property" });
-    if (!Array.isArray(req.body.categories)) errors.push({ message: "Bad syntax on categories property" });
+    if (typeof req.body.title !== 'string') errors.push({ message: messages.errors.badSyntax("title") });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
+    if (!Array.isArray(req.body.blocks)) errors.push({ message: messages.errors.badSyntax("blocks") });
+    if (!Array.isArray(req.body.categories)) errors.push({ message: messages.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
     // Blocks can't be empty array
     if (req.body.blocks.length < 1) return res.status(400).json({ message: "Article content missing" });

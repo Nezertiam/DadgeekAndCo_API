@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "init": "node ./config/init.js",
-    "start": "node server",
-    "server": "nodemon server"
+    "start": "tsc server.js --allowJs --outDir",
+    "server": "tsc server.js",
+    "tsc": "tsc"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,8 @@
   },
   "devDependencies": {
     "concurrently": "^6.3.0",
-    "nodemon": "^2.0.13"
+    "nodemon": "^2.0.13",
+    "ts-node": "^10.3.0",
+    "typescript": "^4.4.4"
   }
 }
