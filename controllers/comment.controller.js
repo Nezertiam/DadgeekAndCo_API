@@ -1,8 +1,10 @@
 import { validationResult } from "express-validator";
+import sanitizer from "sanitizer";
+
 import User from "../models/User.js";
 import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
-import sanitizer from "sanitizer";
+
 import messages from "../services/messages.js";
 
 
