@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
 import sanitizer from "sanitizer";
+import messages from "../services/messages.js";
 
 
 // @route POST /api/comment
@@ -22,8 +23,8 @@ export const createComment = async (req, res) => {
     // STEP 2 : CHECK TYPES TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (typeof req.body.slug !== 'string') errors.push({ message: "Bad syntax on slug property" });
-    if (typeof req.body.text !== 'string') errors.push({ message: "Bad syntax on text property" });
+    if (typeof req.body.slug !== 'string') errors.push({ message: messages.errors.badSyntax("slug") });
+    if (typeof req.body.text !== 'string') errors.push({ message: messages.errors.badSyntax("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -35,13 +36,13 @@ export const createComment = async (req, res) => {
 
     // Validate slug
     slug = sanitizer.sanitize(req.body.slug);
-    if (slug !== req.body.slug) errors.push({ message: "Slug contains invalid characters" });
-    if (!slug) errors.push({ message: "Slug cannot be empty" });
+    if (slug !== req.body.slug) errors.push({ message: messages.errors.invalidChars("Slug") });
+    if (!slug) errors.push({ message: messages.errors.empty("slug") });
 
     // Validate text
     text = sanitizer.sanitize(req.body.text);
-    if (text !== req.body.text) errors.push({ message: "Comment content contains invalid characters" });
-    if (!text) errors.push({ message: "Text cannot be empty" });
+    if (text !== req.body.text) errors.push({ message: messages.errors.invalidChars("text") });
+    if (!text) errors.push({ message: messages.errors.empty("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -52,14 +53,12 @@ export const createComment = async (req, res) => {
 
     // Validate user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) errors.push({ message: "User not found" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
 
     // Validate article
     const article = await Article.findOne({ slug: slug });
-    if (!article) errors.push({ message: "Article not found" });
+    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
 
-    // End of step, returns errors
-    if (errors.length > 0) return res.status(404).json({ errors: errors });
 
 
 
@@ -79,10 +78,10 @@ export const createComment = async (req, res) => {
     try {
         const comment = new Comment(commentFields)
         await comment.save();
-        res.status(201).json({ message: "Comment successfully created!", data: comment });
+        res.status(201).json({ message: messages.success.created("article"), data: comment });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -93,8 +92,7 @@ export const createComment = async (req, res) => {
  */
 export const readComment = async (req, res) => {
     // Get id
-    let id = sanitizer.sanitize(req.params.id);
-    if (!id) return res.status(400).json({ message: "Id contains unvalid characters" })
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: "Id contains unvalid characters" })
 
     // Get comment
     let comment = await Comment.findOne({ _id: req.params.id });
