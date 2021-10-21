@@ -6,6 +6,8 @@ import uuid from "uuid/v4.js";
 import User from "../models/User.js";
 import Category from "../models/Category.js";
 
+import messages from "../services/messages.js";
+
 
 // @Route POST /api/category
 /**
@@ -24,14 +26,14 @@ export const createCategory = async (req, res) => {
     // STEP 2 : CHECK TYPES AND GRANT PERSMISSION TO AVOID EXECUTION ERRORS
 
     // check types
-    if (typeof req.body.title !== 'string') errors.push({ message: "Bad syntax on title property" });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (typeof req.body.title !== 'string') errors.push({ message: messages.errors.badSyntax("Title") });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permissions
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "No permission" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() });
 
 
 
@@ -39,17 +41,17 @@ export const createCategory = async (req, res) => {
 
     // Validate title
     const title = sanitizer.sanitize(req.body.title);
-    if (title !== req.body.title) errors.push({ message: "Title contains invalid characters" });
+    if (title !== req.body.title) errors.push({ message: messages.errors.invalidChars("title") });
 
     // Create slug based on title
     const slug = slugify(title);
     const category = await Category.findOne({ slug: slug });
-    if (category) errors.push({ message: "Category already exists" });
+    if (category) errors.push({ message: messages.builder(400, "Category already exists.") });
 
     // Validate facultative description
     let description;
     if (req.body.description) description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+    if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -72,10 +74,10 @@ export const createCategory = async (req, res) => {
     try {
         const category = new Category(categoryFields);
         await category.save();
-        return res.status(201).json({ message: "Category created!", data: category });
+        return res.status(201).json({ message: messages.success.created("Category"), data: category });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -88,7 +90,7 @@ export const getCategories = async (req, res) => {
     // Get categories
     const categories = await Category.find().sort({ title: "asc" });
 
-    if (categories.length < 1) return res.status(200).json({ message: "No categories created yet", data: [] })
+    if (categories.length < 1) return res.status(404).json({ message: messages.builder(404, "No categories created yet") })
     return res.status(200).json({ message: "Categories found", data: categories });
 }
 
@@ -100,9 +102,9 @@ export const getCategories = async (req, res) => {
 export const getCategory = async (req, res) => {
     // Get category
     const category = await Category.findOne({ slug: req.params.slug })
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category) return res.status(404).json({ message: messages.errors.notFound("Category") });
 
-    return res.status(200).json({ message: "Category found", data: category });
+    return res.status(200).json({ message: messages.success.found("Category"), data: category });
 }
 
 
@@ -118,17 +120,17 @@ export const editCategory = async (req, res) => {
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "No permission" })
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() })
 
     // Get category
     const category = await Category.findOne({ slug: req.params.slug })
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category) return res.status(404).json({ message: messages.errors.notFound("Category") });
 
 
 
@@ -138,7 +140,7 @@ export const editCategory = async (req, res) => {
     let description;
     if (req.body.description) {
         description = sanitizer.sanitize(req.body.description);
-        if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+        if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
     }
 
     // End of step, returns errors
@@ -163,10 +165,10 @@ export const editCategory = async (req, res) => {
             { $set: categoryFields },
             { new: true }
         );
-        return res.status(200).json({ message: "Category edited successfully", data: editedCategory });
+        return res.status(200).json({ message: messages.success.edited("Category"), data: editedCategory });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -178,12 +180,12 @@ export const editCategory = async (req, res) => {
 export const deleteCategory = async (req, res) => {
     // Get user and permission
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "No permission" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() });
 
     // Get category
     const category = await Category.findOne({ slug: req.params.slug });
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    if (!category) return res.status(404).json({ message: messages.errors.notFound("Category") });
 
     // Set slug
     const slug = slugify("deleted " + uuid() + " " + uuid())
@@ -204,9 +206,9 @@ export const deleteCategory = async (req, res) => {
             { $set: categoryFields },
             { new: true }
         )
-        return res.status(200).json({ message: "Category deleted" });
+        return res.status(200).json({ message: messages.success.deleted() });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
