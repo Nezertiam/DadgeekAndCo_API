@@ -1,5 +1,7 @@
-import Profile from "../models/Profile.js";
 import sanitizer from "sanitizer";
+import Profile from "../models/Profile.js";
+import User from "../models/User.js";
+import messages from "../services/messages.js";
 
 
 // @Route /api/profile/me
@@ -11,18 +13,16 @@ import sanitizer from "sanitizer";
  */
 export const getMyProfile = async (req, res) => {
     try {
-        const profile = await Profile.findOne({ user: req.user.id }).populate("user",
-            ["name", "email", "date", "bio", "avatar", "twitch", "twitter", "instagram", "tiktok", "youtube"]
-        );
+        const profile = await Profile.findOne({ user: req.user.id }).populate("user", ["name", "email", "date"]);
         if (!profile) {
-            return res.status(400).json({ message: "There is no profile for this user." })
+            return res.status(404).json({ message: messages.builder(404, "There is no profile for this user.") })
         } else {
-            return res.json(profile);
+            return res.json({ message: messages.success.found("profile"), data: profile });
         }
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: "Server error." })
+        res.status(500).json({ message: messages.errors.server() })
     }
 }
 
@@ -34,19 +34,21 @@ export const getMyProfile = async (req, res) => {
  * @param {*} res 
  */
 export const getProfile = async (req, res) => {
+
+    // Check id
+    if (req.params.user_id.length !== 12 || req.params.user_id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+
     try {
-        const profile = await Profile.findOne({ user: req.params.user_id }).populate("user",
-            ["name", "bio", "avatar", "twitch", "twitter", "instagram", "tiktok", "youtube"]
-        );
+        const profile = await Profile.findOne({ user: req.params.user_id }).populate("user", ["name"]);
         if (!profile) {
-            return res.status(400).json({ message: "There is no profile for this user." })
+            return res.status(404).json({ message: messages.builder(404, "There is no profile for this user.") })
         } else {
-            return res.json({ data: profile });
+            return res.json({ message: messages.success.found("profile"), data: profile });
         }
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: "Server error." })
+        res.status(500).json({ message: messages.errors.server() })
     }
 }
 
@@ -60,8 +62,16 @@ export const getProfile = async (req, res) => {
  */
 export const editMyProfile = async (req, res) => {
 
-    const profileFields = {};
+    // if id
+    if (req.params.id && (req.params.id.length !== 12 || req.params.id.length !== 24)) return res.status(400).json({ message: messages.errors.invalidId() })
 
+    // Grant permission if other user
+    if (req.params.id) let user = User.findOne({ _id: req.params.id });
+    if (req.params.id && !user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (req.params.id && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() });
+
+
+    const profileFields = {};
 
     // Sanitize fields
     if (req.body.bio && typeof req.body.bio === "string") {
@@ -97,15 +107,17 @@ export const editMyProfile = async (req, res) => {
     if (tiktok) profileFields.tiktok = tiktok;
     if (youtube) profileFields.youtube = youtube;
 
+    const id = (req.params.id) ? req.params.id : req.user.id;
+
     try {
         const profile = await Profile.findOneAndUpdate(
-            { user: req.user.id },
+            { user: id },
             { $set: profileFields },
             { new: true }
         );
-        return res.status(200).json({ data: profile });
+        return res.status(200).json({ message: messages.success.edited("Profile"), data: profile });
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: "Server error." })
+        res.status(500).json({ message: messages.errors.server() })
     }
 }
