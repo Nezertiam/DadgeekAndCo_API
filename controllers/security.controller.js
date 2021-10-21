@@ -59,35 +59,15 @@ export const register = async (req, res) => {
     // Create a new profile for this user and save it
     const profile = new Profile({ user: user.id })
 
-    // Set the user id in the payload of the JWT
-    const payload = {
-        user: {
-            id: user.id // can use .id instead of ._id thanks to mongoose
-        }
-    }
-
     try {
         // Save the user and profile
         await user.save();
         await profile.save();
 
-        // Sign JSON and returns it in the callback
-        jwt.sign(
-            payload,
-            config.get("jwtSecret"),
-            { expiresIn: config.get("jwtExp") },
-            (err, token) => {
-                if (err) {
-                    throw err;
-                } else {
-                    return res.status(201).json({ message: "User created successfully", data: token })
-                }
-            }
-        )
-
+        return res.status(201).json({ message: "Hey you, you're finally awake!" })
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("Server error.");
+        return res.status(500).json({ message: "Server error" });
     }
 }
 

@@ -1,9 +1,9 @@
 import Category from "../../models/Category.js";
 
 /**
- * Filters the blocks array and returns blocks for save or the errors.
+ * Filters the categories ids array and returns the array or the errors.
  * 
- * @param {[{ type: String, content: String }]} categoriesId
+ * @param {[type: String]} categoriesId
  * 
  * @returns {{
  *      fullfilled: boolean, 
