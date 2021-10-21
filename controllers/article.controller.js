@@ -33,12 +33,12 @@ export const createArticle = async (req, res) => {
     if (!Array.isArray(req.body.categories)) errors.push({ message: messages.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
     // Blocks can't be empty array
-    if (req.body.blocks.length < 1) return res.status(400).json({ message: "Article content missing" });
+    if (req.body.blocks.length < 1) return res.status(400).json({ message: messages.errors.propMissing("blocks") });
 
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ message: "Permission required" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ message: messages.errors.unauthorized() });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -50,21 +50,21 @@ export const createArticle = async (req, res) => {
 
     // Validate required title
     const title = sanitizer.sanitize(req.body.title);
-    if (title !== req.body.title) errors.push({ message: "Title contains invalid characters" });
-    if (!title) errors.push({ message: "Title cannot be empty" });
+    if (title !== req.body.title) errors.push({ message: messages.errors.invalidChars("title") });
+    if (!title) errors.push({ message: messages.errors.empty("title") });
 
     // Create slug based on title
     let slug = slugify(title);
     slug = sanitizer.sanitize(slug);
-    if (!slug) errors.push({ message: "Slug creation failed because of invalid title" });
+    if (!slug) errors.push({ message: messages.errors.creationFailed("slug", "title") });
     // Test if article already exists based on slug
     const article = await Article.findOne({ slug: slug });
-    if (article) errors.push({ message: "Title already taken. Maybe you already published this article?" });
+    if (article) errors.push({ message: messages.builder(400, "Title already taken. Maybe you already published this article?") });
 
     // Validate facultative description
     let description;
     if (req.body.description) description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+    if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
 
     // Get blocks and verify all blocks
     const results = validate.blocks(req.body.blocks);
@@ -99,10 +99,10 @@ export const createArticle = async (req, res) => {
     try {
         const article = new Article(articleFields)
         await article.save();
-        res.status(201).json({ message: "Article successfully created!", data: article });
+        res.status(201).json({ message: messages.success.created("article"), data: article });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -130,14 +130,14 @@ export const readArticles = async (req, res) => {
     let articles;
     if (category) {
         const categoryObject = await Category.findOne({ slug: category });
-        if (!categoryObject) return res.status(404).json({ message: "Category not found" });
+        if (!categoryObject) return res.status(404).json({ message: messages.errors.notFound("category") });
         articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit);
     } else {
         articles = await Article.find().skip(skip).limit(limit)
     }
 
-    if (articles.length < 1) return res.status(404).json({ message: "No more articles or no articles created yet" });
-    return res.status(200).json({ message: "Articles found", data: articles });
+    if (articles.length < 1) return res.status(404).json({ message: "404 - No more articles or no articles created yet." });
+    return res.status(200).json({ message: messages.success.found("Articles"), data: articles });
 }
 
 
@@ -148,11 +148,11 @@ export const readArticles = async (req, res) => {
 export const readArticle = async (req, res) => {
     // Get the slug for db search
     const slug = sanitizer.sanitize(req.params.slug);
-    if (!slug) return res.status(400).json({ message: "Slug contains unvalid characters" })
+    if (!slug) return res.status(400).json({ message: messages.errors.invalidChars("Slug") })
 
     // Get the article with the slug
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: "Article not found" });
+    if (!article) return res.status(404).json({ message: messages.errors.notFound("article") });
 
     const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' })
 
@@ -165,7 +165,7 @@ export const readArticle = async (req, res) => {
 /**
  * Edit an article found by its slug
  */
-export const editArticle = async (req, res) => {        // TODO : Refacto + block validation
+export const editArticle = async (req, res) => {
 
     let errors = [];
 
@@ -173,22 +173,22 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: "Bad syntax on description property" });
-    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ message: "Bad syntax on blocks property" });
-    if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ message: "Bad syntax on categories property" });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
+    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ message: messages.errors.badSyntax("blocks") });
+    if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ message: messages.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
 
     // find article by slug
     const article = await Article.findOne({ slug: req.params.slug });
-    if (!article) return res.status(404).json({ message: "Article not found" });
+    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
 
     // Grant permission (article author + admin)
-    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" })
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: messages.builder(400, "You can't modify an article that isn't yours.") });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: messages.builder(400, "You can't modify content since you're not an author anymore.") })
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -201,7 +201,7 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
     let description;
     if (req.body.description) {
         description = sanitizer.sanitize(req.body.description);
-        if (description !== req.body.description) errors.push({ message: "Description contains invalid characters" });
+        if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
     }
 
     // Validate facultative blocks
@@ -222,7 +222,7 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ message: "Nothing to update" });
+    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ message: messages.builder(400, "Nothing to update.") });
 
 
     // STEP 3 : SET FIELDS DATAS
@@ -244,10 +244,10 @@ export const editArticle = async (req, res) => {        // TODO : Refacto + bloc
             { new: true }
         );
 
-        return res.status(200).json({ message: "Article edited successfully", data: editedArticle });
+        return res.status(200).json({ message: messages.success.edited("Article"), data: editedArticle });
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: "Server error" })
+        return res.status(500).json({ message: messages.errors.server() })
     }
 }
 
@@ -259,27 +259,27 @@ export const deleteArticle = async (req, res) => {
 
     // Get the user with the id in the token
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "Can't authenticate this user" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
 
     // find article by slug
     const slug = sanitizer.sanitize(req.params.slug);
-    if (!slug) return res.status(400).json({ message: "Slug contains unvalid characters" })
+    if (!slug) return res.status(400).json({ message: messages.errors.invalidChars("Slug") })
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: "Article not found" });
+    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
 
     // Only the author can modify its articles
-    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "You can't modify an article that isn't yours" });
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: messages.builder(400, "You can't delete an article that isn't yours.") });
 
-    // The user must still be an anthor to be able to modify its articles
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: "You can't modify content since you're not an author anymore" });
+    // The user must still be an anthor to be able to delete its articles
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: messages.builder(400, "You can't delete article since you're not an author anymore.") });
 
     try {
         await Article.findOneAndDelete({ slug: slug });
         await Comment.deleteMany({ article: article.id });
-        return res.status(200).json({ message: "Article and comments deleted successfully" })
+        return res.status(200).json({ message: messages.success.deleted("Article and its comments") })
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: "Server error" })
+        return res.status(500).json({ message: messages.errors.server() })
     }
 }
 
@@ -291,7 +291,7 @@ export const deleteArticle = async (req, res) => {
 export const likeArticle = async (req, res) => {
     // Get comment
     const article = await Article.findOne({ slug: req.params.slug });
-    if (!article) return res.status(400).json({ message: "Article not found" })
+    if (!article) return res.status(400).json({ message: messages.errors.notFound("Article") })
 
     // get like array
     const likes = article.likes;
@@ -310,9 +310,9 @@ export const likeArticle = async (req, res) => {
             { $set: { likes } },
             { new: true }
         );
-        return res.status(200).json({ message: "Article successfully liked" });
+        return res.status(200).json({ message: messages.builder(200, "Article liked!") });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
