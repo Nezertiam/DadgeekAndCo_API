@@ -91,12 +91,12 @@ export const createComment = async (req, res) => {
  * Read a specific comment
  */
 export const readComment = async (req, res) => {
-    // Get id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: "Id contains unvalid characters" })
+    // Check id
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
 
     // Get comment
     let comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: "Comment not found" });
+    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: message.error.notFound("Comment") });
 
     // Return comment
     return res.json({ data: comment });
@@ -109,13 +109,16 @@ export const readComment = async (req, res) => {
  */
 export const editComment = async (req, res) => {
 
+    // Check id
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+
     let errors = [];
 
 
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (req.body.text && typeof req.body.text !== 'string') errors.push({ message: "Bad syntax on text property" });
+    if (req.body.text && typeof req.body.text !== 'string') errors.push({ message: messages.errors.badSyntax("text") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
@@ -124,8 +127,8 @@ export const editComment = async (req, res) => {
 
     // Validate text
     let text = sanitizer.sanitize(req.body.text);
-    if (text !== req.body.text) errors.push({ message: "Invalid content" });
-    if (!text) errors.push({ message: "Text must defined" });
+    if (text !== req.body.text) errors.push({ message: messages.errors.invalidChars("text") });
+    if (!text) errors.push({ message: messages.errors.empty("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -136,17 +139,17 @@ export const editComment = async (req, res) => {
 
     // Get comment by id
     const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: "Comment not found" });
+    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: messages.errors.notFound("comment") });
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
 
     // Check if user is the comment author
-    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.builder(401, "Can't edit a comment that isn't yours") });
 
     // Text has to change
-    if (text === comment.text) return res.status(400).json({ message: "Text must be different to edit the comment" })
+    if (text === comment.text) return res.status(400).json({ message: messages.builder(400, "Text must be different to edit the comment") })
 
 
 
@@ -175,10 +178,10 @@ export const editComment = async (req, res) => {
             { $set: commentFields },
             { new: true }
         )
-        return res.status(200).json({ message: "Comment edited successfully", data: editedComment });
+        return res.status(200).json({ message: messages.success.edited("comment"), data: editedComment });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -189,19 +192,22 @@ export const editComment = async (req, res) => {
  */
 export const deleteComment = async (req, res) => {
 
-    // Get comment
-    const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    // Check id
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+
+    // Get comment
+    const comment = await Comment.findOne({ _id: req.params.id });
+    if (!comment) return res.status(404).json({ message: messages.errors.notFound("comment") });
 
     // Check if comment is already deleted
-    if (comment.deleted) return res.status(404).json({ message: "Comment not found" });
+    if (comment.deleted) return res.status(404).json({ message: messages.errors.notFound("comment") });
 
     // Grant permission
-    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: "Can't edit a comment that isn't yours" });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.builder(201, "Can't delete a comment that isn't yours") });
 
     // Set a new revision
     let revisionsTable = comment.revisions;
@@ -225,10 +231,10 @@ export const deleteComment = async (req, res) => {
             { $set: commentFields },
             { new: true }
         );
-        return res.status(200).json({ message: "Comment deleted successfully" });
+        return res.status(200).json({ message: messages.success.deleted("comment") });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }
 
@@ -238,9 +244,13 @@ export const deleteComment = async (req, res) => {
  * Like a specific comment
  */
 export const likeComment = async (req, res) => {
+
+    // Check id
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+
     // Get comment
     const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(400).json({ message: "Comment not found" })
+    if (!comment || (comment && comment.deleted === true)) return res.status(400).json({ message: messages.errors.notFound("comment") })
 
     // get like array
     const likes = comment.likes;
@@ -266,12 +276,12 @@ export const likeComment = async (req, res) => {
             { new: true }
         );
         if (hasLiked) {
-            return res.status(200).json({ message: "Comment liked" });
+            return res.status(200).json({ message: messages.builder(200, "Comment liked") });
         } else {
-            return res.status(200).json({ message: "Comment disliked" })
+            return res.status(200).json({ message: messages.builder(200, "Comment disliked") })
         }
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }

@@ -62,6 +62,15 @@ const empty = (resource) => {
     }
 }
 
+/**
+ * @param {String} resource (optionnal)
+ * 
+ * @Return "400 - IDs must be a string of 12 or 24 characters." 
+ */
+const invalidId = (resource) => {
+    return "400 - IDs must be a string of 12 or 24 characters."
+}
+
 
 
 
@@ -133,6 +142,7 @@ const errors = {
     invalidChars: invalidChars,
     empty: empty,
     creationFailed: creationFailed,
-    server: server
+    server: server,
+    invalidId: invalidId
 }
 export default errors;
