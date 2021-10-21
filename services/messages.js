@@ -8,7 +8,8 @@ import { default as success } from "./messages/success.messages.js";
  * @returns "params.code - params.message"
  */
 const builder = (code, message) => {
-    return `${code} - ${message}`
+    let str = `${code} - ${message}`;
+    if (!str.slice(-1) === ".") return str + "."
 }
 
 const messages = {
