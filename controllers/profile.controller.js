@@ -66,7 +66,8 @@ export const editMyProfile = async (req, res) => {
     if (req.params.id && (req.params.id.length !== 12 || req.params.id.length !== 24)) return res.status(400).json({ message: messages.errors.invalidId() })
 
     // Grant permission if other user
-    if (req.params.id) let user = User.findOne({ _id: req.params.id });
+    let user;
+    if (req.params.id) user = User.findOne({ _id: req.params.id });
     if (req.params.id && !user) return res.status(401).json({ message: messages.errors.invalidToken() });
     if (req.params.id && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() });
 

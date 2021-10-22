@@ -1,5 +1,5 @@
 import express from "express";
-import { register, authentication, deleteMe } from "../controllers/security.controller.js";
+import { register, authentication, deleteMe, verify, resendEmail } from "../controllers/security.controller.js";
 import { check } from "express-validator";
 import auth from "../middleware/auth.js"
 
@@ -26,6 +26,18 @@ router.post("/auth", [
 // @desc    "Delete" user's account and profile by overwriting personal data by other strings
 // @access  private
 router.delete("/delete", auth, deleteMe);
+
+// @route   GET api/security/verify
+// @desc    Verify user's email
+// @access  public
+router.get("/verify/:uniqueString", verify);
+
+// @route   POST api/security/verify
+// @desc    Resend verification email
+// @access  public
+router.post("/resend", [
+    check("email", "Please include a valid email").isEmail()
+], resendEmail);
 
 
 export default router;
