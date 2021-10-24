@@ -295,6 +295,7 @@ export const likeArticle = async (req, res) => {
 
     // get like array
     const likes = article.likes;
+    let bool = false;
 
     // If is in array, dislike, else like
     if (likes.includes(req.user.id)) {
@@ -302,6 +303,7 @@ export const likeArticle = async (req, res) => {
         if (index > -1) likes.splice(index, 1);
     } else {
         likes.push(req.user.id);
+        bool = true;
     }
 
     try {
@@ -310,7 +312,11 @@ export const likeArticle = async (req, res) => {
             { $set: { likes } },
             { new: true }
         );
-        return res.status(200).json({ message: messages.builder(200, "Article liked!") });
+        if (bool) {
+            return res.status(200).json({ message: messages.builder(200, "Article liked!") });
+        } else {
+            return res.status(200).json({ message: messages.builder(200, "Article disliked!") });
+        }
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: messages.errors.server() });
