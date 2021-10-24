@@ -5,9 +5,16 @@ export default function (req, res, next) {
     // get token from header
     const token = req.header("x-auth-token");
 
+    const response = {
+        code: 401,
+        status: "Unauthorized",
+        message: undefined
+    }
+
     // Check if no token
     if (!token) {
-        return res.status(401).json({ message: "No token, access denied" });
+        response.message = "No token, access denied."
+        return res.status(401).json({ ...response });
     }
 
     // Verify token
@@ -16,6 +23,7 @@ export default function (req, res, next) {
         req.user = decoded.user;
         next();
     } catch (err) {
-        res.status(401).json({ message: "Token is not valid" });
+        response.message = "Invalid token."
+        res.status(401).json({ ...response });
     }
 }

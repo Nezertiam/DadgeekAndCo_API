@@ -1,14 +1,19 @@
+// Librairies
 import { validationResult } from "express-validator";
 import slugify from "slugify";
 import sanitizer from "sanitizer";
 
+// Models
 import Article from "../models/Article.js";
 import User from "../models/User.js";
 import Comment from "../models/Comment.js";
 import Category from "../models/Category.js";
 
+// Services
 import validate from "../services/validation.js";
-import messages from "../services/messages.js"
+import response from "../services/response.js"
+
+
 
 // @route POST /api/article
 /**
@@ -27,18 +32,18 @@ export const createArticle = async (req, res) => {
     // STEP 2 : CHECK TYPES AND GRANT PERSMISSION TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (typeof req.body.title !== 'string') errors.push({ message: messages.errors.badSyntax("title") });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
-    if (!Array.isArray(req.body.blocks)) errors.push({ message: messages.errors.badSyntax("blocks") });
-    if (!Array.isArray(req.body.categories)) errors.push({ message: messages.errors.badSyntax("categories") });
+    if (typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
+    if (!Array.isArray(req.body.blocks)) errors.push({ ...response.errors.badSyntax("blocks") });
+    if (!Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
     // Blocks can't be empty array
-    if (req.body.blocks.length < 1) return res.status(400).json({ message: messages.errors.propMissing("blocks") });
+    if (req.body.blocks.length < 1) return res.status(400).json({ ...response.errors.propMissing("blocks") });
 
     // Get user and grant permission
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ message: messages.errors.unauthorized() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ ...response.errors.unauthorized() });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -50,21 +55,21 @@ export const createArticle = async (req, res) => {
 
     // Validate required title
     const title = sanitizer.sanitize(req.body.title);
-    if (title !== req.body.title) errors.push({ message: messages.errors.invalidChars("title") });
-    if (!title) errors.push({ message: messages.errors.empty("title") });
+    if (title !== req.body.title) errors.push({ ...response.errors.invalidChars("title") });
+    if (!title) errors.push({ ...response.errors.empty("title") });
 
     // Create slug based on title
     let slug = slugify(title);
     slug = sanitizer.sanitize(slug);
-    if (!slug) errors.push({ message: messages.errors.creationFailed("slug", "title") });
+    if (!slug) errors.push({ ...response.errors.creationFailed("slug", "title") });
     // Test if article already exists based on slug
     const article = await Article.findOne({ slug: slug });
-    if (article) errors.push({ message: messages.builder(400, "Title already taken. Maybe you already published this article?") });
+    if (article) errors.push({ ...response.builder(400, "Title already taken. Maybe you already published this article?") });
 
     // Validate facultative description
     let description;
     if (req.body.description) description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
+    if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
 
     // Get blocks and verify all blocks
     const results = validate.blocks(req.body.blocks);
@@ -99,10 +104,10 @@ export const createArticle = async (req, res) => {
     try {
         const article = new Article(articleFields)
         await article.save();
-        res.status(201).json({ message: messages.success.created("article"), data: article });
+        res.status(201).json({ ...response.success.created("article"), data: article });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: messages.errors.server() });
+        res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -130,14 +135,14 @@ export const readArticles = async (req, res) => {
     let articles;
     if (category) {
         const categoryObject = await Category.findOne({ slug: category });
-        if (!categoryObject) return res.status(404).json({ message: messages.errors.notFound("category") });
+        if (!categoryObject) return res.status(404).json({ ...response.errors.notFound("category") });
         articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit);
     } else {
         articles = await Article.find().skip(skip).limit(limit)
     }
 
-    if (articles.length < 1) return res.status(404).json({ message: "404 - No more articles or no articles created yet." });
-    return res.status(200).json({ message: messages.success.found("Articles"), data: articles });
+    if (articles.length < 1) return res.status(404).json({ ..."404 - No more articles or no articles created yet." });
+    return res.status(200).json({ ...response.success.found("Articles"), data: articles });
 }
 
 
@@ -148,11 +153,11 @@ export const readArticles = async (req, res) => {
 export const readArticle = async (req, res) => {
     // Get the slug for db search
     const slug = sanitizer.sanitize(req.params.slug);
-    if (!slug) return res.status(400).json({ message: messages.errors.invalidChars("Slug") })
+    if (!slug) return res.status(400).json({ ...response.errors.invalidChars("Slug") })
 
     // Get the article with the slug
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: messages.errors.notFound("article") });
+    if (!article) return res.status(404).json({ ...response.errors.notFound("article") });
 
     const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' })
 
@@ -173,22 +178,22 @@ export const editArticle = async (req, res) => {
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ message: messages.errors.badSyntax("description") });
-    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ message: messages.errors.badSyntax("blocks") });
-    if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ message: messages.errors.badSyntax("categories") });
+    if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
+    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ ...response.errors.badSyntax("blocks") });
+    if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // find article by slug
     const article = await Article.findOne({ slug: req.params.slug });
-    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
+    if (!article) return res.status(404).json({ ...response.errors.notFound("Article") });
 
     // Grant permission (article author + admin)
-    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: messages.builder(400, "You can't modify an article that isn't yours.") });
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: messages.builder(400, "You can't modify content since you're not an author anymore.") })
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ ...response.builder(400, "You can't modify an article that isn't yours.") });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ ...response.builder(400, "You can't modify content since you're not an author anymore.") })
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -201,7 +206,7 @@ export const editArticle = async (req, res) => {
     let description;
     if (req.body.description) {
         description = sanitizer.sanitize(req.body.description);
-        if (description !== req.body.description) errors.push({ message: messages.errors.invalidChars("description") });
+        if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
     }
 
     // Validate facultative blocks
@@ -222,7 +227,7 @@ export const editArticle = async (req, res) => {
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ message: messages.builder(400, "Nothing to update.") });
+    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ ...response.builder(400, "Nothing to update.") });
 
 
     // STEP 3 : SET FIELDS DATAS
@@ -244,10 +249,10 @@ export const editArticle = async (req, res) => {
             { new: true }
         );
 
-        return res.status(200).json({ message: messages.success.edited("Article"), data: editedArticle });
+        return res.status(200).json({ ...response.success.edited("Article"), data: editedArticle });
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: messages.errors.server() })
+        return res.status(500).json({ ...response.errors.server() })
     }
 }
 
@@ -259,27 +264,27 @@ export const deleteArticle = async (req, res) => {
 
     // Get the user with the id in the token
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // find article by slug
     const slug = sanitizer.sanitize(req.params.slug);
-    if (!slug) return res.status(400).json({ message: messages.errors.invalidChars("Slug") })
+    if (!slug) return res.status(400).json({ ...response.errors.invalidChars("Slug") })
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
+    if (!article) return res.status(404).json({ ...response.errors.notFound("Article") });
 
     // Only the author can modify its articles
-    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: messages.builder(400, "You can't delete an article that isn't yours.") });
+    if (!user.equals(article.user) && !user.isGranted("ROLE_ADMIN")) return res.status(400).json({ ...response.builder(400, "You can't delete an article that isn't yours.") });
 
     // The user must still be an anthor to be able to delete its articles
-    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ message: messages.builder(400, "You can't delete article since you're not an author anymore.") });
+    if (!user.isGranted("ROLE_AUTHOR")) return res.status(400).json({ ...response.builder(400, "You can't delete article since you're not an author anymore.") });
 
     try {
         await Article.findOneAndDelete({ slug: slug });
         await Comment.deleteMany({ article: article.id });
-        return res.status(200).json({ message: messages.success.deleted("Article and its comments") })
+        return res.status(200).json({ ...response.success.deleted("Article and its comments") })
     } catch (err) {
-        console.error(err.message);
-        return res.status(500).json({ message: messages.errors.server() })
+        console.error(err.message)
+        return res.status(500).json({ ...response.errors.server() })
     }
 }
 
@@ -291,7 +296,7 @@ export const deleteArticle = async (req, res) => {
 export const likeArticle = async (req, res) => {
     // Get comment
     const article = await Article.findOne({ slug: req.params.slug });
-    if (!article) return res.status(400).json({ message: messages.errors.notFound("Article") })
+    if (!article) return res.status(400).json({ ...response.errors.notFound("Article") })
 
     // get like array
     const likes = article.likes;
@@ -313,12 +318,12 @@ export const likeArticle = async (req, res) => {
             { new: true }
         );
         if (bool) {
-            return res.status(200).json({ message: messages.builder(200, "Article liked!") });
+            return res.status(200).json({ ...response.builder(200, "Article liked!") });
         } else {
-            return res.status(200).json({ message: messages.builder(200, "Article disliked!") });
+            return res.status(200).json({ ...response.builder(200, "Article disliked!") });
         }
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: messages.errors.server() });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }

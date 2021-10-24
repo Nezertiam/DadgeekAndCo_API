@@ -16,7 +16,13 @@ const uppercaseFirst = (str) => {
  * @returns "200 - (params.resource) found!"
  */
 const found = (resource) => {
-    return (resource) ? `200 - ${uppercaseFirst(resource)} found!` : "200 - Found!"
+    let message = (resource) ? `${uppercaseFirst(resource)} found!` : "Resource found!";
+
+    return {
+        code: 200,
+        status: "OK",
+        message: message
+    }
 }
 
 /**
@@ -25,7 +31,13 @@ const found = (resource) => {
  * @returns "200 - (params.resource) edited!"
  */
 const edited = (resource) => {
-    return (resource) ? `200 - ${uppercaseFirst(resource)} edited!` : "200 - Edited!"
+    let message = (resource) ? `${uppercaseFirst(resource)} edited!` : "Resource edited!";
+
+    return {
+        code: 200,
+        status: "OK",
+        message: message
+    }
 }
 
 /**
@@ -34,7 +46,13 @@ const edited = (resource) => {
  * @returns "200 - (params.resource) deleted!"
  */
 const deleted = (resource) => {
-    return (resource) ? `200 - ${uppercaseFirst(resource)} deleted!` : "200 - Deleted!"
+    let message = (resource) ? `${uppercaseFirst(resource)} deleted!` : "Resource deleted!";
+
+    return {
+        code: 200,
+        status: "OK",
+        message: message
+    }
 }
 
 
@@ -45,7 +63,13 @@ const deleted = (resource) => {
  * @returns "201 - (params.resource) created!"
  */
 const created = (resource) => {
-    return (resource) ? `201 - ${uppercaseFirst(resource)} created!` : "201 - Created!"
+    let message = (resource) ? `${uppercaseFirst(resource)} created!` : "Resource created!"
+
+    return {
+        code: 200,
+        status: "OK",
+        message: message
+    }
 }
 
 

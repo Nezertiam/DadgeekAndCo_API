@@ -1,11 +1,17 @@
+// Librairies
 import { validationResult } from "express-validator";
 import sanitizer from "sanitizer";
 
+// Models
 import User from "../models/User.js";
 import Article from "../models/Article.js";
 import Comment from "../models/Comment.js";
 
-import messages from "../services/messages.js";
+// Services
+import response from "../services/response.js";
+
+
+
 
 
 // @route POST /api/comment
@@ -25,8 +31,8 @@ export const createComment = async (req, res) => {
     // STEP 2 : CHECK TYPES TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (typeof req.body.slug !== 'string') errors.push({ message: messages.errors.badSyntax("slug") });
-    if (typeof req.body.text !== 'string') errors.push({ message: messages.errors.badSyntax("text") });
+    if (typeof req.body.slug !== 'string') errors.push({ ...response.errors.badSyntax("slug") });
+    if (typeof req.body.text !== 'string') errors.push({ ...response.errors.badSyntax("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -38,13 +44,13 @@ export const createComment = async (req, res) => {
 
     // Validate slug
     slug = sanitizer.sanitize(req.body.slug);
-    if (slug !== req.body.slug) errors.push({ message: messages.errors.invalidChars("Slug") });
-    if (!slug) errors.push({ message: messages.errors.empty("slug") });
+    if (slug !== req.body.slug) errors.push({ ...response.errors.invalidChars("Slug") });
+    if (!slug) errors.push({ ...response.errors.empty("slug") });
 
     // Validate text
     text = sanitizer.sanitize(req.body.text);
-    if (text !== req.body.text) errors.push({ message: messages.errors.invalidChars("text") });
-    if (!text) errors.push({ message: messages.errors.empty("text") });
+    if (text !== req.body.text) errors.push({ ...response.errors.invalidChars("text") });
+    if (!text) errors.push({ ...response.errors.empty("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -55,11 +61,11 @@ export const createComment = async (req, res) => {
 
     // Validate user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Validate article
     const article = await Article.findOne({ slug: slug });
-    if (!article) return res.status(404).json({ message: messages.errors.notFound("Article") });
+    if (!article) return res.status(404).json({ ...response.errors.notFound("Article") });
 
 
 
@@ -80,10 +86,10 @@ export const createComment = async (req, res) => {
     try {
         const comment = new Comment(commentFields)
         await comment.save();
-        res.status(201).json({ message: messages.success.created("article"), data: comment });
+        res.status(201).json({ ...response.success.created("article"), data: comment });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: messages.errors.server() });
+        res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -94,11 +100,11 @@ export const createComment = async (req, res) => {
  */
 export const readComment = async (req, res) => {
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get comment
     let comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: message.error.notFound("Comment") });
+    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ ...rror.notFound("Comment") });
 
     // Return comment
     return res.json({ data: comment });
@@ -112,7 +118,7 @@ export const readComment = async (req, res) => {
 export const editComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     let errors = [];
 
@@ -120,7 +126,7 @@ export const editComment = async (req, res) => {
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
-    if (req.body.text && typeof req.body.text !== 'string') errors.push({ message: messages.errors.badSyntax("text") });
+    if (req.body.text && typeof req.body.text !== 'string') errors.push({ ...response.errors.badSyntax("text") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
@@ -129,8 +135,8 @@ export const editComment = async (req, res) => {
 
     // Validate text
     let text = sanitizer.sanitize(req.body.text);
-    if (text !== req.body.text) errors.push({ message: messages.errors.invalidChars("text") });
-    if (!text) errors.push({ message: messages.errors.empty("text") });
+    if (text !== req.body.text) errors.push({ ...response.errors.invalidChars("text") });
+    if (!text) errors.push({ ...response.errors.empty("text") });
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -141,17 +147,17 @@ export const editComment = async (req, res) => {
 
     // Get comment by id
     const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ message: messages.errors.notFound("comment") });
+    if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ ...response.errors.notFound("comment") });
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Check if user is the comment author
-    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.builder(401, "Can't edit a comment that isn't yours") });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.builder(401, "Can't edit a comment that isn't yours") });
 
     // Text has to change
-    if (text === comment.text) return res.status(400).json({ message: messages.builder(400, "Text must be different to edit the comment") })
+    if (text === comment.text) return res.status(400).json({ ...response.builder(400, "Text must be different to edit the comment") })
 
 
 
@@ -180,10 +186,10 @@ export const editComment = async (req, res) => {
             { $set: commentFields },
             { new: true }
         )
-        return res.status(200).json({ message: messages.success.edited("comment"), data: editedComment });
+        return res.status(200).json({ ...response.success.edited("comment"), data: editedComment });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: messages.errors.server() });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -195,21 +201,21 @@ export const editComment = async (req, res) => {
 export const deleteComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(401).json({ message: messages.errors.invalidToken() });
+    if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Get comment
     const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment) return res.status(404).json({ message: messages.errors.notFound("comment") });
+    if (!comment) return res.status(404).json({ ...response.errors.notFound("comment") });
 
     // Check if comment is already deleted
-    if (comment.deleted) return res.status(404).json({ message: messages.errors.notFound("comment") });
+    if (comment.deleted) return res.status(404).json({ ...response.errors.notFound("comment") });
 
     // Grant permission
-    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.builder(201, "Can't delete a comment that isn't yours") });
+    if (!user.equals(comment.user) && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.builder(201, "Can't delete a comment that isn't yours") });
 
     // Set a new revision
     let revisionsTable = comment.revisions;
@@ -233,10 +239,10 @@ export const deleteComment = async (req, res) => {
             { $set: commentFields },
             { new: true }
         );
-        return res.status(200).json({ message: messages.success.deleted("comment") });
+        return res.status(200).json({ ...response.success.deleted("comment") });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: messages.errors.server() });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -248,11 +254,11 @@ export const deleteComment = async (req, res) => {
 export const likeComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get comment
     const comment = await Comment.findOne({ _id: req.params.id });
-    if (!comment || (comment && comment.deleted === true)) return res.status(400).json({ message: messages.errors.notFound("comment") })
+    if (!comment || (comment && comment.deleted === true)) return res.status(400).json({ ...response.errors.notFound("comment") })
 
     // get like array
     const likes = comment.likes;
@@ -278,12 +284,12 @@ export const likeComment = async (req, res) => {
             { new: true }
         );
         if (hasLiked) {
-            return res.status(200).json({ message: messages.builder(200, "Comment liked") });
+            return res.status(200).json({ ...response.builder(200, "Comment liked") });
         } else {
-            return res.status(200).json({ message: messages.builder(200, "Comment disliked") })
+            return res.status(200).json({ ...response.builder(200, "Comment disliked") })
         }
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ message: messages.errors.server() });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }

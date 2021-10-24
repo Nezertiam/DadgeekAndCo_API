@@ -16,10 +16,17 @@ const uppercaseFirst = (str) => {
  * @Return "400 - Bad syntax (on params.resource property)." 
  */
 const badSyntax = (resource = "") => {
+    let message = "";
     if (resource && typeof resource === "string") {
-        return `400 - Bad syntax on ${resource.toLowerCase() + " "}property.`
+        message += `Bad syntax on ${resource.toLowerCase() + " "}property.`
     } else {
-        return "400 - Bad syntax."
+        message += "Bad syntax."
+    }
+
+    return {
+        code: 400,
+        status: "Bad Request",
+        message: message,
     }
 }
 
@@ -29,10 +36,17 @@ const badSyntax = (resource = "") => {
  * @Return "400 - Property (params.resource) missing." 
  */
 const propMissing = (resource) => {
+    let message = "";
     if (resource && typeof resource === "string") {
-        return `400 - Property ${resource.toLowerCase() + " "}missing.`
+        message += `Property ${resource.toLowerCase() + " "}missing.`
     } else {
-        return "400 - Property missing."
+        message += "Property missing."
+    }
+
+    return {
+        code: 400,
+        status: "Bad Request",
+        message: message
     }
 }
 
@@ -42,10 +56,17 @@ const propMissing = (resource) => {
  * @Return "400 - (params.ressource contains) invalid characters." 
  */
 const invalidChars = (resource) => {
+    let message = "";
     if (resource && typeof resource === "string") {
-        return `400 - ${uppercase(resource)} contains invalid characters.`
+        message += `${uppercase(resource)} contains invalid characters.`
     } else {
-        return "400 - Invalid characters."
+        message += "Invalid characters."
+    }
+
+    return {
+        code: 400,
+        status: "Bad Request",
+        message: message
     }
 }
 
@@ -55,10 +76,17 @@ const invalidChars = (resource) => {
  * @Return "400 - (params.ressource) cannot be empty." 
  */
 const empty = (resource) => {
+    let message = "";
     if (resource && typeof resource === "string") {
-        return `400 - ${uppercase(resource)} cannot be empty.`
+        message += `${uppercase(resource)} cannot be empty.`
     } else {
-        return "400 - Cannot be empty."
+        message += "Cannot be empty."
+    }
+
+    return {
+        code: 400,
+        status: "Bad Request",
+        message: message
     }
 }
 
@@ -68,7 +96,13 @@ const empty = (resource) => {
  * @Return "400 - IDs must be a string of 12 or 24 characters." 
  */
 const invalidId = (resource) => {
-    return "400 - IDs must be a string of 12 or 24 characters."
+    let message = "IDs must be a string of 12 or 24 characters."
+
+    return {
+        code: 400,
+        status: "Bad Request",
+        message: message
+    }
 }
 
 
@@ -79,14 +113,26 @@ const invalidId = (resource) => {
  * @Return "401 - Invalid token" 
  */
 const invalidToken = () => {
-    return "401 - Invalid token";
+    let message = "Invalid token.";
+
+    return {
+        code: 401,
+        status: "Unauthorized",
+        message: message
+    }
 }
 
 /**
  * @Return "401 - Unauthorized user." 
  */
 const unauthorized = () => {
-    return "401 - Unauthorized user.";
+    let message = "Unauthorized user.";
+
+    return {
+        code: 401,
+        status: "Unauthorized",
+        message: message
+    }
 }
 
 
@@ -99,10 +145,17 @@ const unauthorized = () => {
  * @Return "404 - params.resource not found."
  */
 const notFound = (resource) => {
+    let message = "";
     if (resource && typeof resource === "string") {
-        return `404 - ${uppercaseFirst(resource)} not found.`
+        message += `404 - ${uppercaseFirst(resource)} not found.`
     } else {
-        return "404 - Not found."
+        message += "404 - Not found."
+    }
+
+    return {
+        code: 404,
+        status: "Not Found",
+        message: message
     }
 }
 
@@ -118,17 +171,28 @@ const notFound = (resource) => {
  */
 const creationFailed = (resource, resource2) => {
 
-    let str = "500 -";
+    let str = "";
 
-    str = (resource && typeof resource === "string") ? `${str} ${resource.toLowerCase()} creation failed` : `${str} Creation failed.`;
-    str = (resource2 && typeof resource2 === "string") ? `${str} because of invalid ${resource2}.` : `${str}.`
+    str += (resource) ? `${str} ${uppercaseFirst(resource)} creation failed` : `${str} Creation failed.`;
+    str += (resource2) ? `${str} because of invalid ${resource2}.` : `${str}.`
 
-    return str;
+    return {
+        code: 500,
+        status: "Internal Server Error",
+        message: message
+    }
 }
 
 
 const server = () => {
-    return "500 - Internal server error."
+
+    let message = "Internal Server Error";
+
+    return {
+        code: 500,
+        status: "Internal Server Error",
+        message: message
+    }
 }
 
 

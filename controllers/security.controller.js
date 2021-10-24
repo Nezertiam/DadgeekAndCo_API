@@ -1,3 +1,4 @@
+// Librairies
 import { validationResult } from "express-validator";
 import sanitizer from "sanitizer";
 import argon2 from "argon2";
@@ -5,11 +6,17 @@ import jwt from "jsonwebtoken";
 import uuid from "uuid/v4.js";
 import config from "config";
 
+// Models
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
 
+// Services
 import { sendRegisterValidation } from "../services/mailer/registration.mails.js";
-import messages from "../services/messages.js";
+import response from "../services/response.js";
+
+
+
+
 
 // Routes
 
@@ -27,26 +34,26 @@ export const register = async (req, res) => {
     errors = []    // reset errors
 
     // Check types
-    if (typeof req.body.name !== 'string') errors.push({ message: "Bad syntax on name property" });
-    if (typeof req.body.email !== 'string') errors.push({ message: "Bad syntax on email property" });
-    if (typeof req.body.password !== 'string') errors.push({ message: "Bad syntax on password property" });
+    if (typeof req.body.name !== 'string') errors.push({ ...response.errors.badSyntax("name") });
+    if (typeof req.body.email !== 'string') errors.push({ ...response.errors.badSyntax("email") });
+    if (typeof req.body.password !== 'string') errors.push({ ...response.errors.badSyntax("password") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
     // Get body content
     const name = sanitizer.sanitize(req.body.name)
-    if (name !== req.body.name) errors.push({ message: "Name contains forbidden characters" });
+    if (name !== req.body.name) errors.push({ ...response.errors.invalidChars("Name") });
     const email = sanitizer.sanitize(req.body.email)
-    if (email !== req.body.email) errors.push({ message: "Email contains forbidden characters" });
+    if (email !== req.body.email) errors.push({ ...response.errors.invalidChars("Email") });
     const password = sanitizer.sanitize(req.body.password)
-    if (password !== req.body.password) errors.push({ message: "Password contains forbidden characters" });
+    if (password !== req.body.password) errors.push({ ...response.errors.invalidChars("Password") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
 
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) {
-        return res.status(400).json({ message: "User already exists." });
+        return res.status(400).json({ ...response.builder(400, "User already exists.") });
     }
 
     const randString = () => {
@@ -86,10 +93,10 @@ export const register = async (req, res) => {
 
         await sendRegisterValidation(email, str);
 
-        return res.status(201).json({ message: "Hey you, you're finally awake!" })
+        return res.status(201).json({ ...response.builder(201, "Hey you! You're finally awake!") })
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -108,25 +115,25 @@ export const authentication = async (req, res) => {
     errors = []    // reset errors
 
     // Check types
-    if (typeof req.body.email !== 'string') errors.push({ message: "Bad syntax on email property" });
-    if (typeof req.body.password !== 'string') errors.push({ message: "Bad syntax on password property" });
+    if (typeof req.body.email !== 'string') errors.push({ ...response.errors.badSyntax("email") });
+    if (typeof req.body.password !== 'string') errors.push({ ...response.errors.badSyntax("password") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get body content
     const email = sanitizer.sanitize(req.body.email)
-    if (email !== req.body.email) return res.status(400).json({ message: "Email contains forbidden characters" });
+    if (email !== req.body.email) return res.status(400).json({ ...response.errors.invalidChars("Email") });
     const password = sanitizer.sanitize(req.body.password)
-    if (password !== req.body.password) return res.status(400).json({ message: "Password contains forbidden characters" });
+    if (password !== req.body.password) return res.status(400).json({ ...response.errors.invalidChars("Password") });
 
     // Check if user exist
     let user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) return res.status(400).json({ ...response.builder(400, "Invalid credentials.") });
 
     // Test if the passwords matches, else return an error
     const isMatch = await argon2.verify(user.password, password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) return res.status(400).json({ ...response.builder(400, "Invalid credentials.") });
 
-    if (user.isValid === false) return res.status(400).json({ message: messages.builder(400, "Email not confirmed.") });
+    if (user.isValid === false) return res.status(400).json({ ...response.builder(400, "Email not confirmed.") });
 
     // Set payload with user's id
     const payload = {
@@ -145,13 +152,13 @@ export const authentication = async (req, res) => {
                 if (err) {
                     throw err;
                 } else {
-                    return res.status(200).json({ message: "Wait, I know you !", data: token })
+                    return res.status(200).json({ ...response.builder(200, "Wait, I know you !"), data: token })
                 }
             }
         )
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("Server error");
+        return res.status(500).json({ ...response.errors.server() });
     }
 }
 
@@ -167,10 +174,10 @@ export const deleteMe = async (req, res) => {
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ ...response.errors.notFound("User") });
 
     // Admin can't delete himself
-    if (user.isGranted("ROLE_ADMIN")) return res.status(400).json({ message: "This account can't be deleted" })
+    if (user.isGranted("ROLE_ADMIN")) return res.status(400).json({ ...response.builder(400, "This account can't be deleted") })
 
     // Generate fake mail
     const uid = uuid();
@@ -193,20 +200,20 @@ export const deleteMe = async (req, res) => {
             { new: true }
         )
         await Profile.findOneAndDelete({ user: req.user.id })
-        return res.status(200).json({ message: "Account and profile successfully deleted", user: user })
+        return res.status(200).json({ ...response.success.deleted("Account and profile"), user: user })
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ message: "Server error." })
+        return res.status(500).json({ ...response.errors.server() })
     }
 }
 
 
 // @route GET /api/security/verify/:uniqueString
 export const verify = async (req, res) => {
-    if (!req.params.uniqueString) return res.status(400).json({ message: messages.errors.empty("params") });
+    if (!req.params.uniqueString) return res.status(400).json({ ...response.errors.empty("params") });
 
     const user = await User.findOne({ uniqueString: req.params.uniqueString });
-    if (!user) return res.status(404).json({ message: messages.errors.notFound("user") });
+    if (!user) return res.status(404).json({ ...response.errors.notFound("user") });
 
     const now = new Date();
     const exp = new Date(user.exp);
@@ -232,10 +239,10 @@ export const verify = async (req, res) => {
 
         try {
             await user.save();
-            return res.status(400).json({ message: messages.builder(400, "Key expired, new email sent.") });
+            return res.status(400).json({ ...response.builder(400, "Key expired, new email sent.") });
         } catch (err) {
             console.log(err);
-            return res.status(500).json({ message: messages.errors.server() });
+            return res.status(500).json({ ...response.errors.server() });
         }
 
     } else {
@@ -244,11 +251,11 @@ export const verify = async (req, res) => {
             user.uniqueString = undefined;
             user.exp = undefined;
             await user.save();
-            return res.json({ message: messages.builder(200, "Email validated") });
+            return res.json({ ...response.builder(200, "Email validated") });
 
         } catch (err) {
             console.log(err);
-            return res.status(500).json({ message: messages.errors.server() });
+            return res.status(500).json({ ...response.errors.server() });
         }
     }
 }
@@ -261,7 +268,7 @@ export const resendEmail = async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const user = await User.findOne({ email: req.body.email });
-    if (!user) return res.status(404).json({ message: messages.errors.notFound("user") });
+    if (!user) return res.status(404).json({ ...response.errors.notFound("user") });
 
     const randString = () => {
         const len = 2;
@@ -283,9 +290,9 @@ export const resendEmail = async (req, res) => {
 
     try {
         await user.save();
-        return res.status(200).json({ message: messages.builder(200, "New email sent") });
+        return res.status(200).json({ ...response.builder(200, "New email sent") });
     } catch (err) {
         console.log(err);
-        return res.status(500).json({ message: messages.errors.server() });
+        return res.status(500).json({ ...response.errors.server() });
     }
 }

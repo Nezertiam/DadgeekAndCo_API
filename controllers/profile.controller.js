@@ -1,7 +1,12 @@
+// Librairies
 import sanitizer from "sanitizer";
+
+// Models
 import Profile from "../models/Profile.js";
 import User from "../models/User.js";
-import messages from "../services/messages.js";
+
+// Services
+import response from "../services/response.js";
 
 
 // @Route /api/profile/me
@@ -15,14 +20,14 @@ export const getMyProfile = async (req, res) => {
     try {
         const profile = await Profile.findOne({ user: req.user.id }).populate("user", ["name", "email", "date"]);
         if (!profile) {
-            return res.status(404).json({ message: messages.builder(404, "There is no profile for this user.") })
+            return res.status(404).json({ ...response.builder(404, "There is no profile for this user.") })
         } else {
-            return res.json({ message: messages.success.found("profile"), data: profile });
+            return res.json({ ...response.success.found("profile"), data: profile });
         }
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: messages.errors.server() })
+        res.status(500).json({ ...response.errors.server() })
     }
 }
 
@@ -36,19 +41,19 @@ export const getMyProfile = async (req, res) => {
 export const getProfile = async (req, res) => {
 
     // Check id
-    if (req.params.user_id.length !== 12 || req.params.user_id.length !== 24) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.user_id.length !== 12 || req.params.user_id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     try {
         const profile = await Profile.findOne({ user: req.params.user_id }).populate("user", ["name"]);
         if (!profile) {
-            return res.status(404).json({ message: messages.builder(404, "There is no profile for this user.") })
+            return res.status(404).json({ ...response.builder(404, "There is no profile for this user.") })
         } else {
-            return res.json({ message: messages.success.found("profile"), data: profile });
+            return res.json({ ...response.success.found("profile"), data: profile });
         }
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: messages.errors.server() })
+        res.status(500).json({ ...response.errors.server() })
     }
 }
 
@@ -63,13 +68,13 @@ export const getProfile = async (req, res) => {
 export const editMyProfile = async (req, res) => {
 
     // if id
-    if (req.params.id && (req.params.id.length !== 12 || req.params.id.length !== 24)) return res.status(400).json({ message: messages.errors.invalidId() })
+    if (req.params.id && (req.params.id.length !== 12 || req.params.id.length !== 24)) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Grant permission if other user
     let user;
     if (req.params.id) user = User.findOne({ _id: req.params.id });
-    if (req.params.id && !user) return res.status(401).json({ message: messages.errors.invalidToken() });
-    if (req.params.id && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ message: messages.errors.unauthorized() });
+    if (req.params.id && !user) return res.status(401).json({ ...response.errors.invalidToken() });
+    if (req.params.id && !user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.errors.unauthorized() });
 
 
     const profileFields = {};
@@ -116,9 +121,9 @@ export const editMyProfile = async (req, res) => {
             { $set: profileFields },
             { new: true }
         );
-        return res.status(200).json({ message: messages.success.edited("Profile"), data: profile });
+        return res.status(200).json({ ...response.success.edited("Profile"), data: profile });
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ message: messages.errors.server() })
+        res.status(500).json({ ...response.errors.server() })
     }
 }
