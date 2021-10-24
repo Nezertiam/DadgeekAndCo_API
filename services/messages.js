@@ -9,7 +9,8 @@ import { default as success } from "./messages/success.messages.js";
  */
 const builder = (code, message) => {
     let str = `${code} - ${message}`;
-    if (!str.slice(-1) === ".") return str + "."
+    if (!str.slice(-1) === ".") str += ".";
+    return str;
 }
 
 const messages = {

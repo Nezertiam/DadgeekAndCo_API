@@ -4,8 +4,12 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import uuid from "uuid/v4.js";
 import config from "config";
+
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
+
+import { sendRegisterValidation } from "../services/mailer/registration.mails.js";
+import messages from "../services/messages.js";
 
 // Routes
 
@@ -45,11 +49,26 @@ export const register = async (req, res) => {
         return res.status(400).json({ message: "User already exists." });
     }
 
+    const randString = () => {
+        const len = 2;
+        let randStr = "";
+        for (let i = 0; i < len; i++) {
+            const ch = uuid();
+            randStr += ch;
+        }
+        return randStr;
+    }
+
+    const str = randString();
+    const exp = new Date(new Date().getTime() + 5 * 60000);
+
     // Hydratation of the new user object 
     user = new User({
         name,
         email,
-        password
+        password,
+        uniqueString: str,
+        exp: exp
     })
 
     // Hash password and set the hash as the user's password
@@ -59,10 +78,13 @@ export const register = async (req, res) => {
     // Create a new profile for this user and save it
     const profile = new Profile({ user: user.id })
 
+
     try {
         // Save the user and profile
         await user.save();
         await profile.save();
+
+        await sendRegisterValidation(email, str);
 
         return res.status(201).json({ message: "Hey you, you're finally awake!" })
     } catch (err) {
@@ -103,6 +125,8 @@ export const authentication = async (req, res) => {
     // Test if the passwords matches, else return an error
     const isMatch = await argon2.verify(user.password, password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    if (user.isValid === false) return res.status(400).json({ message: messages.builder(400, "Email not confirmed.") });
 
     // Set payload with user's id
     const payload = {
@@ -173,5 +197,95 @@ export const deleteMe = async (req, res) => {
     } catch (err) {
         console.error(err.message);
         return res.status(500).json({ message: "Server error." })
+    }
+}
+
+
+// @route GET /api/security/verify/:uniqueString
+export const verify = async (req, res) => {
+    if (!req.params.uniqueString) return res.status(400).json({ message: messages.errors.empty("params") });
+
+    const user = await User.findOne({ uniqueString: req.params.uniqueString });
+    if (!user) return res.status(404).json({ message: messages.errors.notFound("user") });
+
+    const now = new Date();
+    const exp = new Date(user.exp);
+
+    if (now > exp) {
+        const randString = () => {
+            const len = 2;
+            let randStr = "";
+            for (let i = 0; i < len; i++) {
+                const ch = uuid();
+                randStr += ch;
+            }
+            return randStr;
+        }
+
+        const str = randString();
+        const newExp = new Date(new Date().getTime() + 5 * 60000);
+
+        user.exp = newExp;
+        user.uniqueString = str;
+
+        sendRegisterValidation(user.email, str);
+
+        try {
+            await user.save();
+            return res.status(400).json({ message: messages.builder(400, "Key expired, new email sent.") });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ message: messages.errors.server() });
+        }
+
+    } else {
+        try {
+            user.isValid = true;
+            user.uniqueString = undefined;
+            user.exp = undefined;
+            await user.save();
+            return res.json({ message: messages.builder(200, "Email validated") });
+
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ message: messages.errors.server() });
+        }
+    }
+}
+
+
+// @route POST /api/security/resend
+export const resendEmail = async (req, res) => {
+    // First, validate body content or return an error
+    let errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return res.status(404).json({ message: messages.errors.notFound("user") });
+
+    const randString = () => {
+        const len = 2;
+        let randStr = "";
+        for (let i = 0; i < len; i++) {
+            const ch = uuid();
+            randStr += ch;
+        }
+        return randStr;
+    }
+
+    const str = randString();
+    const newExp = new Date(new Date().getTime() + 5 * 60000);
+
+    user.exp = newExp;
+    user.uniqueString = str;
+
+    sendRegisterValidation(user.email, str);
+
+    try {
+        await user.save();
+        return res.status(200).json({ message: messages.builder(200, "New email sent") });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: messages.errors.server() });
     }
 }

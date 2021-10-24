@@ -18,6 +18,17 @@ const UserSchema = new mongoose.Schema(
         roles: {
             type: [String],
             default: ["ROLE_USER"]
+        },
+        uniqueString: {
+            type: String
+        },
+        exp: {
+            type: Date
+        },
+        isValid: {
+            type: Boolean,
+            required: true,
+            default: false
         }
     },
     { timestamps: true }
