@@ -60,7 +60,7 @@ export const createComment = async (req, res) => {
     // STEP 4 : GRANT PERSMISSION
 
     // Validate user
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Validate article
@@ -150,7 +150,7 @@ export const editComment = async (req, res) => {
     if (!comment || (comment && comment.deleted === true)) return res.status(404).json({ ...response.errors.notFound("comment") });
 
     // Get user
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Check if user is the comment author
@@ -204,7 +204,7 @@ export const deleteComment = async (req, res) => {
     if (req.params.id.length !== 12 && req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get user
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // Get comment

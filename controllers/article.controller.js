@@ -41,7 +41,7 @@ export const createArticle = async (req, res) => {
     if (req.body.blocks.length < 1) return res.status(400).json({ ...response.errors.propMissing("blocks") });
 
     // Get user and grant permission
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
     if (!user.isGranted("ROLE_AUTHOR")) return res.status(401).json({ ...response.errors.unauthorized() });
 
@@ -184,7 +184,7 @@ export const editArticle = async (req, res) => {
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // find article by slug
@@ -263,7 +263,7 @@ export const editArticle = async (req, res) => {
 export const deleteArticle = async (req, res) => {
 
     // Get the user with the id in the token
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
 
     // find article by slug

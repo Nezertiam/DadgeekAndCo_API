@@ -37,7 +37,7 @@ export const createCategory = async (req, res) => {
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permissions
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
     if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.errors.unauthorized() });
 
@@ -130,7 +130,7 @@ export const editCategory = async (req, res) => {
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
     // Get user and grant permission
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
     if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.errors.unauthorized() })
 
@@ -185,7 +185,7 @@ export const editCategory = async (req, res) => {
  */
 export const deleteCategory = async (req, res) => {
     // Get user and permission
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(401).json({ ...response.errors.invalidToken() });
     if (!user.isGranted("ROLE_ADMIN")) return res.status(401).json({ ...response.errors.unauthorized() });
 

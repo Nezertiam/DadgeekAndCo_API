@@ -173,7 +173,7 @@ export const authentication = async (req, res) => {
 export const deleteMe = async (req, res) => {
 
     // Get user
-    const user = await User.findOne({ _id: req.user.id });
+    const user = req.user;
     if (!user) return res.status(404).json({ ...response.errors.notFound("User") });
 
     // Admin can't delete himself
