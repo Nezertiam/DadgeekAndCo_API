@@ -1,5 +1,6 @@
 // Librairies
 import sanitizer from "sanitizer";
+import mongoose from "mongoose";
 
 // Models
 import Profile from "../models/Profile.js";
@@ -9,12 +10,9 @@ import User from "../models/User.js";
 import response from "../services/response.js";
 
 
-// @Route /api/profile/me
+// @Route GET /api/profile/me
 /**
  * Get the user's profile via user ID in JWT
- * 
- * @param {*} req 
- * @param {*} res 
  */
 export const getMyProfile = async (req, res) => {
     try {
@@ -80,27 +78,33 @@ export const editMyProfile = async (req, res) => {
     const profileFields = {};
 
     // Sanitize fields
-    if (req.body.bio && typeof req.body.bio === "string") {
+    let bio;
+    if (req.body.bio && typeof req.body.bio === "string" || typeof req.body.bio === "undefined") {
         bio = sanitizer.sanitize(req.body.bio)
         if (bio === req.body.bio) profileFields.bio = bio;
     };
-    if (req.body.twitch && typeof req.body.twitch === "string") {
+    let twitch;
+    if (req.body.twitch && typeof req.body.twitch === "string" || typeof req.body.twitch === "undefined") {
         twitch = sanitizer.sanitize(req.body.twitch)
         if (twitch === req.body.twitch) profileFields.twitch = twitch;
     };
-    if (req.body.twitter && typeof req.body.twitter === "string") {
+    let twitter;
+    if (req.body.twitter && typeof req.body.twitter === "string" || typeof req.body.twitter === "undefined") {
         twitter = sanitizer.sanitize(req.body.twitter)
         if (twitter === req.body.twitter) profileFields.twitter = twitter;
     };
-    if (req.body.instagram && typeof req.body.instagram === "string") {
+    let instagram;
+    if (req.body.instagram && typeof req.body.instagram === "string" || typeof req.body.instagram === "undefined") {
         instagram = sanitizer.sanitize(req.body.instagram)
         if (instagram === req.body.instagram) profileFields.instagram = instagram;
     };
-    if (req.body.tiktok && typeof req.body.tiktok === "string") {
+    let tiktok;
+    if (req.body.tiktok && typeof req.body.tiktok === "string" || typeof req.body.tiktok === "undefined") {
         tiktok = sanitizer.sanitize(req.body.tiktok)
         if (tiktok === req.body.tiktok) profileFields.tiktok = tiktok;
     };
-    if (req.body.youtube && typeof req.body.youtube === "string") {
+    let youtube;
+    if (req.body.youtube && typeof req.body.youtube === "string" || typeof req.body.youtube === "undefined") {
         youtube = sanitizer.sanitize(req.body.youtube)
         if (youtube === req.body.youtube) profileFields.youtube = youtube;
     };

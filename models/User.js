@@ -63,7 +63,7 @@ UserSchema.methods.isGranted = function (role) {
  */
 UserSchema.methods.isBanned = function () {
 
-    if (new Date(this.banEnd) > new Date()) {
+    if (this.banEnd && new Date(this.banEnd) > new Date()) {
         return true;
     } else {
         return false;

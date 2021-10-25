@@ -107,7 +107,7 @@ export const getCategories = async (req, res) => {
  */
 export const getCategory = async (req, res) => {
     // Get category
-    const category = await Category.findOne({ slug: req.params.slug })
+    const category = await Category.findOne({ slug: req.params.slug });
     if (!category) return res.status(404).json({ ...response.errors.notFound("Category") });
 
     return res.status(200).json({ ...response.success.found("Category"), data: category });
@@ -143,6 +143,16 @@ export const editCategory = async (req, res) => {
     // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS
 
     // Validate facultative description
+    let title;
+    let slug;
+    if (req.body.title) {
+        title = sanitizer.sanitize(req.body.title);
+        if (title !== req.body.title) errors.push({ ...response.errors.invalidChars("title") });
+        // Create slug based on title
+        slug = slugify(title);
+        const checkCategory = await Category.findOne({ slug: slug });
+        if (checkCategory) errors.push({ ...response.builder(400, "Category already exists.") });
+    }
     let description;
     if (req.body.description) {
         description = sanitizer.sanitize(req.body.description);
@@ -157,6 +167,8 @@ export const editCategory = async (req, res) => {
     // STEP 3 : SET FIELDS DATAS
 
     const categoryFields = {
+        title,
+        slug,
         description
     };
 
