@@ -136,6 +136,20 @@ const unauthorized = () => {
 }
 
 
+/**
+ * @Return "401 - Banned user." 
+ */
+const bannedUser = () => {
+    let message = "Banned user.";
+
+    return {
+        code: 401,
+        status: "Unauthorized",
+        message: message
+    }
+}
+
+
 
 
 
@@ -207,6 +221,7 @@ const errors = {
     empty: empty,
     creationFailed: creationFailed,
     server: server,
-    invalidId: invalidId
+    invalidId: invalidId,
+    bannedUser: bannedUser
 }
 export default errors;

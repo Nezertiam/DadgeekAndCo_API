@@ -33,6 +33,10 @@ const UserSchema = new mongoose.Schema(
         banEnd: {
             type: Date,
             default: undefined
+        },
+        banTimes: {
+            type: Number,
+            default: 0
         }
     },
     { timestamps: true }
@@ -47,6 +51,19 @@ UserSchema.methods.isGranted = function (role) {
     if (typeof role !== "string") throw "Not a string";
 
     if (this.roles.includes("ROLE_ADMIN") || this.roles.includes(role)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+/**
+ * Check if the user is banned
+ */
+UserSchema.methods.isBanned = function () {
+
+    if (new Date(this.banEnd) > new Date()) {
         return true;
     } else {
         return false;

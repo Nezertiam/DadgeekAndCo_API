@@ -128,6 +128,8 @@ export const authentication = async (req, res) => {
     // Check if user exist
     let user = await User.findOne({ email });
     if (!user) return res.status(400).json({ ...response.builder(400, "Invalid credentials.") });
+    if (user.isBanned) return res.status(401).json({ ...response.errors.bannedUser() })
+
 
     // Test if the passwords matches, else return an error
     const isMatch = await argon2.verify(user.password, password);

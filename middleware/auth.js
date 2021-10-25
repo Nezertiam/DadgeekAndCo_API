@@ -23,6 +23,10 @@ export default async function (req, res, next) {
     try {
         const decoded = jwt.verify(token, config.get("jwtSecret"));
         const user = await User.findOne({ _id: decoded.user.id })
+        if (user.isBanned()) {
+            response.message = "Banned user.";
+            return res.status(401).json({ ...response });
+        }
         req.user = user;
         next();
     } catch (err) {

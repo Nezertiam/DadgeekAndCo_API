@@ -43,12 +43,12 @@ export const createComment = async (req, res) => {
     // STEP 3 : VALIDATE AND GENERATE FIELDS DATAS
 
     // Validate slug
-    slug = sanitizer.sanitize(req.body.slug);
+    const slug = sanitizer.sanitize(req.body.slug);
     if (slug !== req.body.slug) errors.push({ ...response.errors.invalidChars("Slug") });
     if (!slug) errors.push({ ...response.errors.empty("slug") });
 
     // Validate text
-    text = sanitizer.sanitize(req.body.text);
+    const text = sanitizer.sanitize(req.body.text);
     if (text !== req.body.text) errors.push({ ...response.errors.invalidChars("text") });
     if (!text) errors.push({ ...response.errors.empty("text") });
 
