@@ -29,6 +29,10 @@ const UserSchema = new mongoose.Schema(
             type: Boolean,
             required: true,
             default: false
+        },
+        banEnd: {
+            type: Date,
+            default: undefined
         }
     },
     { timestamps: true }

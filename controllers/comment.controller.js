@@ -100,7 +100,7 @@ export const createComment = async (req, res) => {
  */
 export const readComment = async (req, res) => {
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
+    if (req.params.id.length !== 12 && req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get comment
     let comment = await Comment.findOne({ _id: req.params.id });
@@ -118,7 +118,7 @@ export const readComment = async (req, res) => {
 export const editComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
+    if (req.params.id.length !== 12 && req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     let errors = [];
 
@@ -201,7 +201,7 @@ export const editComment = async (req, res) => {
 export const deleteComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
+    if (req.params.id.length !== 12 && req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get user
     const user = await User.findOne({ _id: req.user.id });
@@ -254,7 +254,7 @@ export const deleteComment = async (req, res) => {
 export const likeComment = async (req, res) => {
 
     // Check id
-    if (req.params.id.length !== 12 || req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
+    if (req.params.id.length !== 12 && req.params.id.length !== 24) return res.status(400).json({ ...response.errors.invalidId() })
 
     // Get comment
     const comment = await Comment.findOne({ _id: req.params.id });

@@ -5,6 +5,7 @@ import profileRoutes from "./routes/profile.routes.js";
 import articleRoutes from "./routes/article.routes.js";
 import commentRoutes from "./routes/comment.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/article", articleRoutes);
 app.use("/api/comment", commentRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 const PORT = process.env.PORT || 5000;

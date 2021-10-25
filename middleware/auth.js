@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import config from "config";
 
-export default function (req, res, next) {
+import User from "../models/User.js";
+
+export default async function (req, res, next) {
     // get token from header
     const token = req.header("x-auth-token");
 
@@ -20,7 +22,8 @@ export default function (req, res, next) {
     // Verify token
     try {
         const decoded = jwt.verify(token, config.get("jwtSecret"));
-        req.user = decoded.user;
+        const user = await User.findOne({ _id: decoded.user.id })
+        req.user = user;
         next();
     } catch (err) {
         response.message = "Invalid token."
