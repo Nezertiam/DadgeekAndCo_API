@@ -59,7 +59,7 @@ export const createArticle = async (req, res) => {
     if (!title) errors.push({ ...response.errors.empty("title") });
 
     // Create slug based on title
-    let slug = slugify(title);
+    let slug = slugify(title, { lower: true, trim: true });
     slug = sanitizer.sanitize(slug);
     if (!slug) errors.push({ ...response.errors.creationFailed("slug", "title") });
     // Test if article already exists based on slug
@@ -178,6 +178,7 @@ export const editArticle = async (req, res) => {
     // STEP 1 : CHECK FIELDS TYPE, GRANT USER, FIND ARTICLE TO AVOID EXECUTION ERRORS
 
     // Check types
+    if (req.body.title && typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
     if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
     if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ ...response.errors.badSyntax("blocks") });
     if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
@@ -201,6 +202,21 @@ export const editArticle = async (req, res) => {
 
 
     // STEP 2 : VALIDATE AND GENERATE FIELDS DATAS
+
+    // Validate facultative title
+    let title;
+    let slug;
+    if (req.body.title) {
+        title = sanitizer.sanitize(req.body.title);
+        if (title !== req.body.title) errors.push({ ...response.errors.invalidChars("title") });
+        // Create slug based on title
+        slug = slugify(title, { lower: true, trim: true });
+        slug = sanitizer.sanitize(slug);
+        if (!slug) errors.push({ ...response.errors.creationFailed("slug", "title") });
+        // Test if article already exists based on slug
+        const article = await Article.findOne({ slug: slug });
+        if (article) errors.push({ ...response.builder(400, "Title already taken. Maybe you already published this article?") });
+    }
 
     // Validate facultative description
     let description;
@@ -233,6 +249,7 @@ export const editArticle = async (req, res) => {
     // STEP 3 : SET FIELDS DATAS
 
     const articleFields = {
+        title,
         description,
         categories,
         blocks
