@@ -162,7 +162,7 @@ export const readArticle = async (req, res) => {
     const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' })
 
     // Return the article
-    return res.json({ data: { article, comments } })
+    return res.json({ ...response.success.found("Article"), data: { article, comments } });
 }
 
 
