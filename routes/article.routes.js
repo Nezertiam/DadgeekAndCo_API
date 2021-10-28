@@ -10,7 +10,7 @@ const router = express.Router();
 // @access  Private
 router.post("/", auth, [
     check("title", "Title is required.").not().isEmpty(),
-    check("blocks", "Article content cannot be empty.").not().isEmpty()
+    check("content", "Article content cannot be empty.").not().isEmpty()
 ], createArticle);
 
 // @route   GET api/article
