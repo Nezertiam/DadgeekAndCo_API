@@ -50,7 +50,7 @@ export const createCategory = async (req, res) => {
     if (title !== req.body.title) errors.push({ ...response.errors.invalidChars("title") });
 
     // Create slug based on title
-    const slug = slugify(title);
+    const slug = slugify(title, { lower: true, trim: true });
     const category = await Category.findOne({ slug: slug });
     if (category) errors.push({ ...response.builder(400, "Category already exists.") });
 
@@ -149,7 +149,7 @@ export const editCategory = async (req, res) => {
         title = sanitizer.sanitize(req.body.title);
         if (title !== req.body.title) errors.push({ ...response.errors.invalidChars("title") });
         // Create slug based on title
-        slug = slugify(title);
+        slug = slugify(title, { lower: true, trim: true });
         const checkCategory = await Category.findOne({ slug: slug });
         if (checkCategory) errors.push({ ...response.builder(400, "Category already exists.") });
     }
