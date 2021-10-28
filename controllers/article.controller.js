@@ -34,11 +34,11 @@ export const createArticle = async (req, res) => {
     // Check types
     if (typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
     if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
-    if (!Array.isArray(req.body.blocks)) errors.push({ ...response.errors.badSyntax("blocks") });
+    if (req.body.content && typeof req.body.content !== 'string') errors.push({ ...response.errors.badSyntax("content") });
     if (!Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
+    // Return errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-    // Blocks can't be empty array
-    if (req.body.blocks.length < 1) return res.status(400).json({ ...response.errors.propMissing("blocks") });
+
 
     // Get user and grant permission
     const user = req.user;
@@ -71,15 +71,15 @@ export const createArticle = async (req, res) => {
     if (req.body.description) description = sanitizer.sanitize(req.body.description);
     if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
 
-    // Get blocks and verify all blocks
-    const results = validate.blocks(req.body.blocks);
-    if (!results.fullfilled) errors.push({ errorsOnBlocks: results.errors });
-    const blocks = results.data;
+    // Validate content
+    let content;
+    if (req.body.content) content = sanitizer.sanitize(req.body.content);
+    if (content !== req.body.content) errors.push({ ...response.errors.invalidChars("content") });
 
     // Check if categories exist
-    const results2 = await validate.categories(req.body.categories); // TODO : Turn this function into a promise
-    if (!results2.fullfilled) errors.push({ errorsOnCategories: results2.errors });
-    const categories = results2.data;
+    const results = await validate.categories(req.body.categories); // TODO : Turn this function into a promise
+    if (!results.fullfilled) errors.push({ errorsOnCategories: results.errors });
+    const categories = results.data;
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -94,7 +94,7 @@ export const createArticle = async (req, res) => {
         categories: categories,
         title,
         description,
-        blocks
+        content
     }
 
 
@@ -180,7 +180,7 @@ export const editArticle = async (req, res) => {
     // Check types
     if (req.body.title && typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
     if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
-    if (req.body.blocks && typeof req.body.blocks === "object" && !Array.isArray(req.body.blocks)) errors.push({ ...response.errors.badSyntax("blocks") });
+    if (req.body.content && typeof req.body.content !== 'string') errors.push({ ...response.errors.badSyntax("content") });
     if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
 
@@ -225,12 +225,11 @@ export const editArticle = async (req, res) => {
         if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
     }
 
-    // Validate facultative blocks
-    let blocks;
-    if (req.body.blocks) {
-        const results = validate.blocks(req.body.blocks);
-        if (!results.fullfilled) errors.push({ errorsOnBlocks: results.errors });
-        blocks = results.data;
+    // Validate facultative content
+    let content;
+    if (req.body.content) {
+        if (req.body.content) content = sanitizer.sanitize(req.body.content);
+        if (content !== req.body.content) errors.push({ ...response.errors.invalidChars("content") });
     }
 
     // Validate facultative categories
@@ -243,7 +242,7 @@ export const editArticle = async (req, res) => {
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-    if (typeof description === typeof categories && typeof categories === typeof blocks) return res.status(400).json({ ...response.builder(400, "Nothing to update.") });
+    if (typeof description === typeof categories && typeof categories === typeof content) return res.status(400).json({ ...response.builder(400, "Nothing to update.") });
 
 
     // STEP 3 : SET FIELDS DATAS
@@ -252,7 +251,7 @@ export const editArticle = async (req, res) => {
         title,
         description,
         categories,
-        blocks
+        content
     };
 
 

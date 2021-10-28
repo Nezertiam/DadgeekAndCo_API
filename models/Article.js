@@ -27,8 +27,8 @@ const ArticleSchema = new mongoose.Schema(
         description: {
             type: String
         },
-        blocks: {
-            type: [Object],
+        content: {
+            type: String,
             required: true
         },
         likes: {
