@@ -15,8 +15,9 @@ import response from "../services/response.js";
  * Get the user's profile via user ID in JWT
  */
 export const getMyProfile = async (req, res) => {
+    console.log("test")
     try {
-        const profile = await Profile.findOne({ user: req.user.id }).populate("user", ["name", "email", "date"]);
+        const profile = await Profile.findOne({ user: req.user.id }).populate("user", ["name", "email", "date", "roles"]);
         if (!profile) {
             return res.status(404).json({ ...response.builder(404, "There is no profile for this user.") })
         } else {
