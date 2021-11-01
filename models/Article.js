@@ -24,9 +24,6 @@ const ArticleSchema = new mongoose.Schema(
         photo: {
             type: String
         },
-        description: {
-            type: String
-        },
         content: {
             type: String,
             required: true

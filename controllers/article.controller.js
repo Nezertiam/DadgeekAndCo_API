@@ -33,7 +33,6 @@ export const createArticle = async (req, res) => {
 
     // Check types
     if (typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
     if (req.body.content && typeof req.body.content !== 'string') errors.push({ ...response.errors.badSyntax("content") });
     if (!Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
     // Return errors
@@ -66,13 +65,10 @@ export const createArticle = async (req, res) => {
     const article = await Article.findOne({ slug: slug });
     if (article) errors.push({ ...response.builder(400, "Title already taken. Maybe you already published this article?") });
 
-    // Validate facultative description
-    let description;
-    if (req.body.description) description = sanitizer.sanitize(req.body.description);
-    if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
 
     // Validate content
     let content;
+    if (!req.body.content) errors.push({ ...response.errors.empty("content") });
     if (req.body.content) content = sanitizer.sanitize(req.body.content);
     if (content !== req.body.content) errors.push({ ...response.errors.invalidChars("content") });
 
@@ -93,7 +89,6 @@ export const createArticle = async (req, res) => {
         slug: slug,
         categories: categories,
         title,
-        description,
         content
     }
 
@@ -136,9 +131,9 @@ export const readArticles = async (req, res) => {
     if (category) {
         const categoryObject = await Category.findOne({ slug: category });
         if (!categoryObject) return res.status(404).json({ ...response.errors.notFound("category") });
-        articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit);
+        articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit).sort({ updatedAt: "desc" });
     } else {
-        articles = await Article.find().skip(skip).limit(limit)
+        articles = await Article.find().skip(skip).limit(limit).sort({ updatedAt: "desc" })
     }
 
     if (articles.length < 1) return res.status(404).json({ ...response.builder(404, "No more articles or no articles created yet.") });
@@ -179,7 +174,6 @@ export const editArticle = async (req, res) => {
 
     // Check types
     if (req.body.title && typeof req.body.title !== 'string') errors.push({ ...response.errors.badSyntax("title") });
-    if (req.body.description && typeof req.body.description !== 'string') errors.push({ ...response.errors.badSyntax("description") });
     if (req.body.content && typeof req.body.content !== 'string') errors.push({ ...response.errors.badSyntax("content") });
     if (req.body.categories && req.body.categories === "object" && !Array.isArray(req.body.categories)) errors.push({ ...response.errors.badSyntax("categories") });
     if (errors.length > 0) return res.status(400).json({ errors: errors });
@@ -218,12 +212,6 @@ export const editArticle = async (req, res) => {
         if (article) errors.push({ ...response.builder(400, "Title already taken. Maybe you already published this article?") });
     }
 
-    // Validate facultative description
-    let description;
-    if (req.body.description) {
-        description = sanitizer.sanitize(req.body.description);
-        if (description !== req.body.description) errors.push({ ...response.errors.invalidChars("description") });
-    }
 
     // Validate facultative content
     let content;
@@ -242,7 +230,7 @@ export const editArticle = async (req, res) => {
 
     // End of step, returns errors
     if (errors.length > 0) return res.status(400).json({ errors: errors });
-    if (typeof description === typeof categories && typeof categories === typeof content) return res.status(400).json({ ...response.builder(400, "Nothing to update.") });
+    if (typeof title === typeof categories && typeof categories === typeof content) return res.status(400).json({ ...response.builder(400, "Nothing to update.") });
 
 
     // STEP 3 : SET FIELDS DATAS
@@ -250,7 +238,6 @@ export const editArticle = async (req, res) => {
     const articleFields = {
         title,
         slug,
-        description,
         categories,
         content
     };

@@ -58,7 +58,7 @@ const propMissing = (resource) => {
 const invalidChars = (resource) => {
     let message = "";
     if (resource && typeof resource === "string") {
-        message += `${uppercase(resource)} contains invalid characters.`
+        message += `${uppercaseFirst(resource)} contains invalid characters.`
     } else {
         message += "Invalid characters."
     }

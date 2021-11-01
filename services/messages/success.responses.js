@@ -66,7 +66,7 @@ const created = (resource) => {
     let message = (resource) ? `${uppercaseFirst(resource)} created!` : "Resource created!"
 
     return {
-        code: 200,
+        code: 201,
         status: "OK",
         message: message
     }
