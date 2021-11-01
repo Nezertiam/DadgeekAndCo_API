@@ -249,6 +249,7 @@ export const editArticle = async (req, res) => {
 
     const articleFields = {
         title,
+        slug,
         description,
         categories,
         content
