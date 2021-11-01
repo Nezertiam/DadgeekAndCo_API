@@ -131,9 +131,9 @@ export const readArticles = async (req, res) => {
     if (category) {
         const categoryObject = await Category.findOne({ slug: category });
         if (!categoryObject) return res.status(404).json({ ...response.errors.notFound("category") });
-        articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit).sort({ updatedAt: "desc" });
+        articles = await Article.find({ categories: categoryObject.id }).skip(skip).limit(limit).sort({ updatedAt: "desc" }).populate("user", ["name"]);
     } else {
-        articles = await Article.find().skip(skip).limit(limit).sort({ updatedAt: "desc" })
+        articles = await Article.find().skip(skip).limit(limit).sort({ updatedAt: "desc" }).populate("user", ["name"])
     }
 
     if (articles.length < 1) return res.status(404).json({ ...response.builder(404, "No more articles or no articles created yet.") });
@@ -151,10 +151,10 @@ export const readArticle = async (req, res) => {
     if (!slug) return res.status(400).json({ ...response.errors.invalidChars("Slug") })
 
     // Get the article with the slug
-    const article = await Article.findOne({ slug: slug });
+    const article = await Article.findOne({ slug: slug }).populate("user", ["name"]);
     if (!article) return res.status(404).json({ ...response.errors.notFound("article") });
 
-    const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' })
+    const comments = await Comment.find({ article: article.id }).sort({ nblikes: 'desc' }).populate("user", ["name"]);
 
     // Return the article
     return res.json({ ...response.success.found("Article"), data: { article, comments } });
