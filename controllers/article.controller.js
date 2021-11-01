@@ -114,7 +114,7 @@ export const createArticle = async (req, res) => {
 
 //@ Route GET /api/article
 /**
- * Return all articles with pagination
+ * Return all articles with filters
  */
 export const readArticles = async (req, res) => {
 
@@ -141,7 +141,7 @@ export const readArticles = async (req, res) => {
         articles = await Article.find().skip(skip).limit(limit)
     }
 
-    if (articles.length < 1) return res.status(404).json({ ..."404 - No more articles or no articles created yet." });
+    if (articles.length < 1) return res.status(404).json({ ...response.builder(404, "No more articles or no articles created yet.") });
     return res.status(200).json({ ...response.success.found("Articles"), data: articles });
 }
 
