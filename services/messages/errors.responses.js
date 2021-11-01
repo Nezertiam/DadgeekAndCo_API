@@ -161,9 +161,9 @@ const bannedUser = () => {
 const notFound = (resource) => {
     let message = "";
     if (resource && typeof resource === "string") {
-        message += `404 - ${uppercaseFirst(resource)} not found.`
+        message += `${uppercaseFirst(resource)} not found.`
     } else {
-        message += "404 - Not found."
+        message += "Not found."
     }
 
     return {
